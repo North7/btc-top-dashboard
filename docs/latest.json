@@ -1,6 +1,6 @@
 {
   "date": "2026-10-03",
-  "generated_at": "2026-10-03T16:51:19Z",
+  "generated_at": "2026-10-03T16:55:02Z",
   "price_usd": 84517.52,
   "price_date": "2026-10-02",
   "top_signal": 0.0,
@@ -10,7 +10,7 @@
   "timing_score": 0.0,
   "hot_categories": 0,
   "zone": "cold",
-  "stale": false,
+  "stale": true,
   "timing": {
     "score": 0.0,
     "score_halving": 0.0,
@@ -80,7 +80,7 @@
             "2013-12-04": 7.704061973442023,
             "2017-12-16": 9.354234932070232,
             "2021-11-08": 3.5338955722930834,
-            "2025-10-06": 2.529864787642148
+            "2025-10-06": 2.5298647876421483
           }
         },
         "nupl": {
@@ -136,7 +136,7 @@
             "2013-12-04": 4.718179179999999,
             "2017-12-16": 4.43076633,
             "2021-11-08": 2.854649564891,
-            "2025-10-06": 2.2871454268799094
+            "2025-10-06": 2.287145426879909
           }
         }
       },
@@ -203,7 +203,7 @@
       "weight": 0.2,
       "score": 9.6,
       "status": "ok",
-      "stale": false,
+      "stale": true,
       "indicators": {
         "etf_flow_30d": {
           "label": "ETF 30 日累計淨流入",
@@ -214,7 +214,7 @@
           "score": 32.6,
           "percentile": 56.2,
           "as_of": "2026-10-03",
-          "stale": false,
+          "stale": true,
           "status": "ok",
           "method": "percentile",
           "history_days": 968
@@ -228,7 +228,7 @@
           "score": 0.0,
           "percentile": 32.0,
           "as_of": "2026-10-03",
-          "stale": false,
+          "stale": true,
           "status": "ok",
           "method": "percentile",
           "history_days": 938
@@ -252,9 +252,9 @@
           "unit": "%",
           "role": "score",
           "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
-          "value": -0.0339,
+          "value": -0.0334,
           "score": 0.0,
-          "percentile": 26.7,
+          "percentile": 26.9,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -267,7 +267,7 @@
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 5.7,
+      "score": 5.4,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -276,9 +276,9 @@
           "unit": "%",
           "role": "score",
           "description": "永續合約多方付給空方的費率。越高代表槓桿做多越擁擠。",
-          "value": 4.2808,
+          "value": 3.523,
           "score": 0.0,
-          "percentile": 32.8,
+          "percentile": 27.3,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -304,9 +304,9 @@
           "unit": "%",
           "role": "score",
           "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
-          "value": 5.0506,
-          "score": 17.1,
-          "percentile": 46.1,
+          "value": 5.0213,
+          "score": 16.1,
+          "percentile": 45.5,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -409,11 +409,13 @@
       "errors": []
     },
     "etf": {
-      "fetched": true,
+      "fetched": false,
       "last_date": "2026-10-02",
-      "stale": false,
+      "stale": true,
       "available": true,
-      "errors": []
+      "errors": [
+        "403 Client Error: Forbidden for url: https://farside.co.uk/bitcoin-etf-flow-all-data/"
+      ]
     }
   },
   "rules": {
