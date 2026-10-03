@@ -63,8 +63,8 @@
 |---|---|---|---|
 | 鏈上估值（35%） | MVRV Z-score、NUPL、實現價格倍數 | Coin Metrics Community | 週期法 |
 | | Puell Multiple | Coin Metrics（IssTotUSD ÷ 365 日均） | 百分位 |
-| 持有者行為（20%） | 交易所 30 日淨流入、交易所餘額 90 日變化 | Coin Metrics | **僅參考，不計分** |
-| 資金流與機構（20%） | ETF 30 日累計淨流入、ETF 流入動能 | Farside | 百分位 |
+| 持有者行為（20%） | 公開版無可用的免費數據，頁面不顯示，權重按比例分給其他類 | — | — |
+| 資金流與機構（20%） | ETF 30 日累計淨流入、ETF 流入動能 | TFTC（CC BY 4.0），Farside 備援 | 百分位 |
 | | 穩定幣總供給 90 日增速 | DefiLlama | 百分位 |
 | | Coinbase 溢價（7 日均） | Coinbase BTC-USD ÷ OKX BTC-USDT | 百分位 |
 | 槓桿與衍生品（15%） | 資金費率 7 日均（年化） | Binance（2019 起），OKX 備援 | 百分位 |
@@ -78,11 +78,20 @@
 - 2028 減半日期為估計值（2028-04-15），實際日期確定後請更新 `btc_top/scoring.py` 的 `HALVINGS`。
 - Google Trends 沒有穩定的免費官方 API，第一版跳過。
 
-### 持有者行為為何不計分
+### 持有者行為為何在公開版不計分
 
 **長期持有者供給變化、LTH-SOPR、CDD / Dormancy** 沒有可公開使用的免費來源：
-- BGeometrics 免費 API 有這些指標，但只提供近 4 年資料，且條款禁止把資料再散布給終端使用者（本倉庫與頁面公開），因此不使用。
-- 以 Coin Metrics 交易所流量替代，實測會**降低**準確度：交易所淨流入在頂部出貨與底部投降時都會升高，且交易所涵蓋範圍多年來有變動。因此只顯示供參考。
+- BGeometrics 免費 API 有這些指標，但只提供近 4 年資料，且條款禁止把資料再散布給終端使用者（本倉庫與頁面公開），因此只在本機私人版使用（見下方）。
+- 以 Coin Metrics 交易所流量替代已測試並**移除**：交易所淨流入在 2013、2017 頂部很高，但在 2021、2025 頂部為 0（資金改經 ETF、託管與 OTC），
+  計入後會讓 2021 頂部訊號從 57 降到 49（未觸發頂部窗口）。
+
+因此公開版的持有者類別標記為 `unavailable`，頁面不顯示，20% 權重按比例分給其他四類。
+
+### 本機私人版
+
+`python run.py --private` 會另外抓 BGeometrics 的 LTH-SOPR、CDD、LTH-MVRV，納入持有者行為計分（4 年百分位）。
+所有資料與輸出都寫在 `private/`（已列入 `.gitignore`，不會上傳），不改動公開版的 `data/` 與 `docs/`。
+BGeometrics 免費額度為每小時 10 次、每天 15 次（依 IP），程式每個 UTC 日只抓一次（3 次請求）。
 
 付費選項（v2，金鑰放 GitHub Secrets）：
 - **Glassnode**（Professional 方案 API：LTH Supply、LTH-SOPR、CDD、Dormancy）
@@ -127,4 +136,4 @@ python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
 本倉庫只放公開市場數據與程式。**禁止寫入任何個人持倉、資產、成本、賣出計畫或規則參數。**
 不使用任何交易所的交易 API 金鑰。v3 的賣出規則回測參數只放本機（`private/` 已列入 `.gitignore`）。
 
-資料來源：Coin Metrics Community（CC BY-NC 4.0）、DefiLlama、Farside Investors、OKX、Binance、Coinbase、alternative.me。
+資料來源：Coin Metrics Community（CC BY-NC 4.0）、DefiLlama、TFTC — tftc.io/bitcoin-etf-flows（CC BY 4.0）、Farside Investors（備援）、OKX、Binance、Coinbase、alternative.me。

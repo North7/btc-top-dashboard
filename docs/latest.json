@@ -1,6 +1,6 @@
 {
   "date": "2026-10-03",
-  "generated_at": "2026-10-03T16:55:02Z",
+  "generated_at": "2026-10-03T17:11:54Z",
   "price_usd": 84517.52,
   "price_date": "2026-10-02",
   "top_signal": 0.0,
@@ -10,7 +10,7 @@
   "timing_score": 0.0,
   "hot_categories": 0,
   "zone": "cold",
-  "stale": true,
+  "stale": false,
   "timing": {
     "score": 0.0,
     "score_halving": 0.0,
@@ -80,7 +80,7 @@
             "2013-12-04": 7.704061973442023,
             "2017-12-16": 9.354234932070232,
             "2021-11-08": 3.5338955722930834,
-            "2025-10-06": 2.5298647876421483
+            "2025-10-06": 2.529864787642148
           }
         },
         "nupl": {
@@ -136,7 +136,7 @@
             "2013-12-04": 4.718179179999999,
             "2017-12-16": 4.43076633,
             "2021-11-08": 2.854649564891,
-            "2025-10-06": 2.287145426879909
+            "2025-10-06": 2.2871454268799094
           }
         }
       },
@@ -149,34 +149,6 @@
       "status": "unavailable",
       "stale": false,
       "indicators": {
-        "exchange_netflow_30d_pct": {
-          "label": "交易所 30 日淨流入",
-          "unit": "% 流通量",
-          "role": "ref",
-          "description": "流入交易所減流出的 30 日合計。在頂部出貨與底部投降時都可能升高，方向不明確，因此僅供參考。",
-          "value": -0.4622,
-          "score": null,
-          "percentile": 4.4,
-          "as_of": "2026-10-02",
-          "stale": false,
-          "status": "ok",
-          "method": "percentile",
-          "history_days": 5617
-        },
-        "exchange_balance_90d_pct": {
-          "label": "交易所餘額 90 日變化",
-          "unit": "% 流通量",
-          "role": "ref",
-          "description": "交易所持有 BTC 的 90 日變化。上升代表更多幣準備賣出。受交易所涵蓋範圍變動影響，僅供參考。",
-          "value": 0.1102,
-          "score": null,
-          "percentile": 67.9,
-          "as_of": "2026-10-02",
-          "stale": false,
-          "status": "ok",
-          "method": "percentile",
-          "history_days": 5551
-        },
         "lth_supply_change": {
           "label": "長期持有者供給變化",
           "role": "score",
@@ -203,18 +175,18 @@
       "weight": 0.2,
       "score": 9.6,
       "status": "ok",
-      "stale": true,
+      "stale": false,
       "indicators": {
         "etf_flow_30d": {
           "label": "ETF 30 日累計淨流入",
           "unit": "百萬美元",
           "role": "score",
           "description": "美國現貨 ETF 過去 30 日的淨申購合計。",
-          "value": 2186.7,
+          "value": 2186.8136,
           "score": 32.6,
           "percentile": 56.2,
           "as_of": "2026-10-03",
-          "stale": true,
+          "stale": false,
           "status": "ok",
           "method": "percentile",
           "history_days": 968
@@ -224,11 +196,11 @@
           "unit": "百萬美元",
           "role": "score",
           "description": "最近 30 日淨流入減前 30 日，正值代表流入在加速。",
-          "value": -1566.2,
+          "value": -1549.9531,
           "score": 0.0,
-          "percentile": 32.0,
+          "percentile": 32.2,
           "as_of": "2026-10-03",
-          "stale": true,
+          "stale": false,
           "status": "ok",
           "method": "percentile",
           "history_days": 938
@@ -252,9 +224,9 @@
           "unit": "%",
           "role": "score",
           "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
-          "value": -0.0334,
+          "value": -0.0344,
           "score": 0.0,
-          "percentile": 26.9,
+          "percentile": 26.3,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -267,7 +239,7 @@
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 5.4,
+      "score": 5.7,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -276,9 +248,9 @@
           "unit": "%",
           "role": "score",
           "description": "永續合約多方付給空方的費率。越高代表槓桿做多越擁擠。",
-          "value": 3.523,
+          "value": 3.9316,
           "score": 0.0,
-          "percentile": 27.3,
+          "percentile": 30.2,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -304,9 +276,9 @@
           "unit": "%",
           "role": "score",
           "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
-          "value": 5.0213,
-          "score": 16.1,
-          "percentile": 45.5,
+          "value": 5.0449,
+          "score": 17.0,
+          "percentile": 46.0,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -409,13 +381,11 @@
       "errors": []
     },
     "etf": {
-      "fetched": false,
+      "fetched": true,
       "last_date": "2026-10-02",
-      "stale": true,
+      "stale": false,
       "available": true,
-      "errors": [
-        "403 Client Error: Forbidden for url: https://farside.co.uk/bitcoin-etf-flow-all-data/"
-      ]
+      "errors": []
     }
   },
   "rules": {

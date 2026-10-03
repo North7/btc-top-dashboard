@@ -30,7 +30,7 @@ CATEGORIES = {
     "sentiment_cycle": {"label": "情緒", "weight": 0.10},
 }
 
-# key: (類別, 名稱, 單位, 角色, 說明)。角色 score = 計入熱度；ref = 僅顯示供參考
+# key: (類別, 名稱, 單位, 角色, 說明)。角色 score = 計入熱度
 INDICATORS = {
     "mvrv_z": ("onchain_valuation", "MVRV Z-score", "", "score",
                "市值與實現市值（所有幣最後移動時價格的總和）的差距，以標準差衡量。越高代表整體未實現獲利越大。"),
@@ -40,10 +40,6 @@ INDICATORS = {
               "礦工每日收入 ÷ 365 日均。礦工收入異常高時，往往是價格過熱。"),
     "rp_multiple": ("onchain_valuation", "實現價格倍數", "x", "score",
                     "價格 ÷ 實現價格（市場平均持幣成本）。數學上等於 MVRV。"),
-    "exchange_netflow_30d_pct": ("holder_behavior", "交易所 30 日淨流入", "% 流通量", "ref",
-                                 "流入交易所減流出的 30 日合計。在頂部出貨與底部投降時都可能升高，方向不明確，因此僅供參考。"),
-    "exchange_balance_90d_pct": ("holder_behavior", "交易所餘額 90 日變化", "% 流通量", "ref",
-                                 "交易所持有 BTC 的 90 日變化。上升代表更多幣準備賣出。受交易所涵蓋範圍變動影響，僅供參考。"),
     "etf_flow_30d": ("capital_flows", "ETF 30 日累計淨流入", "百萬美元", "score",
                      "美國現貨 ETF 過去 30 日的淨申購合計。"),
     "etf_flow_momentum": ("capital_flows", "ETF 流入動能", "百萬美元", "score",
@@ -134,10 +130,7 @@ def build_indicators(raw: dict[str, pd.DataFrame]) -> pd.DataFrame:
     ind["puell"] = cm["IssTotUSD"] / cm["IssTotUSD"].rolling(365, min_periods=300).mean()
     ind["rp_multiple"] = cm["PriceUSD"] / ind["realized_price"]
 
-    # 二、持有者行為（僅參考）
-    net = (cm["FlowInExNtv"] - cm["FlowOutExNtv"]).rolling(30, min_periods=25).sum()
-    ind["exchange_netflow_30d_pct"] = net / cm["SplyCur"] * 100
-    ind["exchange_balance_90d_pct"] = (cm["SplyExNtv"] - cm["SplyExNtv"].shift(90)) / cm["SplyCur"] * 100
+    # 二、持有者行為：公開版無免費可用資料（交易所流量實測方向失效，已移除）；私人版見下方 BGeometrics
 
     # 三、資金流
     if len(raw.get("etf", [])):

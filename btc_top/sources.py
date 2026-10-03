@@ -33,8 +33,7 @@ def _ms_to_date(ms) -> pd.Timestamp:
 
 
 # ---------- Coin Metrics Community（鏈上） ----------
-CM_METRICS = ["PriceUSD", "CapMrktCurUSD", "CapMVRVCur", "IssTotUSD",
-              "FlowInExNtv", "FlowOutExNtv", "SplyCur", "SplyExNtv"]
+CM_METRICS = ["PriceUSD", "CapMrktCurUSD", "CapMVRVCur", "IssTotUSD", "SplyCur"]
 
 
 def coinmetrics() -> pd.DataFrame:
@@ -203,7 +202,19 @@ def coinbase_premium(days: int = 1500) -> pd.DataFrame:
     return pd.DataFrame({"coinbase_premium": df["cb"] / df["okx"] - 1})
 
 
-# ---------- Farside ETF 資金流 ----------
+# ---------- 美國現貨 ETF 資金流：TFTC 為主（CC BY 4.0，不擋雲端 IP），Farside 備援 ----------
+def etf_tftc() -> pd.DataFrame:
+    """TFTC 整理的美國現貨 BTC ETF 每日淨流入（2024-01-11 起），換算成百萬美元。
+
+    授權 CC BY 4.0，需標註來源：TFTC — tftc.io/bitcoin-etf-flows。
+    """
+    d = _get("https://www.tftc.io/bitcoin-etf-flows/data.json")
+    rows = [(pd.Timestamp(r["date"]), r["netFlowUsd"] / 1e6) for r in d["days"] if r.get("netFlowUsd") is not None]
+    df = pd.DataFrame(rows, columns=["date", "etf_flow_musd"]).set_index("date").sort_index()
+    return df
+
+
+# ---------- Farside ETF 資金流（備援） ----------
 def etf_farside() -> pd.DataFrame:
     """美國現貨 ETF 每日淨流入合計（百萬美元）。
 

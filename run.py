@@ -37,7 +37,6 @@ BGEO = {"bgeo_lth_sopr": ("lth-sopr", "lthSopr"), "bgeo_cdd": ("cdd", "cdd"),
 
 INDICATOR_SOURCE = {
     "mvrv_z": "coinmetrics", "nupl": "coinmetrics", "puell": "coinmetrics", "rp_multiple": "coinmetrics",
-    "exchange_netflow_30d_pct": "coinmetrics", "exchange_balance_90d_pct": "coinmetrics",
     "etf_flow_30d": "etf", "etf_flow_momentum": "etf",
     "stable_growth_90d": "stablecoins", "coinbase_premium_7d": "coinbase_premium",
     "funding_7d_ann": "funding", "oi_to_mcap": "open_interest", "basis_ann": "basis",
@@ -73,7 +72,7 @@ def fetch_all(today: pd.Timestamp):
         "open_interest": [sources.open_interest_okx, sources.open_interest_binance],
         "basis": [lambda: sources.basis_binance(since("basis")), sources.basis_okx],
         "coinbase_premium": [lambda: sources.coinbase_premium(30 if len(cb_old) else 1500)],
-        "etf": [sources.etf_farside],
+        "etf": [sources.etf_tftc, sources.etf_farside],
     }
     if PRIVATE:
         for name, (endpoint, field) in BGEO.items():
@@ -101,7 +100,7 @@ def fetch_all(today: pd.Timestamp):
             except Exception as e:  # noqa: BLE001
                 errors.append(str(e)[:200])
         if new is not None and len(new):
-            df = pd.concat([old, new]) if len(old) else new
+            df = pd.concat([old.reindex(columns=new.columns), new]) if len(old) else new
             df = df[~df.index.duplicated(keep="last")].sort_index()
             save_raw(name, df)
             fetched = True
