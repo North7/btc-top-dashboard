@@ -218,3 +218,17 @@ def etf_farside() -> pd.DataFrame:
     s = t["Total"].astype(str).str.replace(",", "").str.strip()
     s = s.str.replace(r"^\((.*)\)$", r"-\1", regex=True).replace({"-": "0"})
     return pd.DataFrame({"etf_flow_musd": pd.to_numeric(s, errors="coerce")}).dropna()
+
+
+# ---------- BGeometrics（僅本機私人版使用） ----------
+def bgeometrics(endpoint: str, field: str) -> pd.DataFrame:
+    """BGeometrics 免費 API（近 4 年資料，每小時 10 次、每天 15 次，依 IP 計算）。
+
+    條款禁止公開再散布，因此只在 `run.py --private` 使用，資料存放在不上傳的 private/。
+    """
+    d = _get(f"https://bitcoin-data.com/v1/{endpoint}", retries=1)
+    if isinstance(d, dict):
+        raise RuntimeError(d.get("error", {}).get("message", str(d))[:200])
+    df = pd.DataFrame({"date": pd.to_datetime([x["d"] for x in d]),
+                       field: pd.to_numeric([x.get(field) for x in d], errors="coerce")})
+    return df.set_index("date").dropna().sort_index()

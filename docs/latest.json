@@ -1,25 +1,75 @@
 {
   "date": "2026-10-03",
-  "generated_at": "2026-10-03T15:51:47Z",
+  "generated_at": "2026-10-03T16:51:19Z",
   "price_usd": 84517.52,
   "price_date": "2026-10-02",
-  "composite_score": 41.2,
+  "top_signal": 0.0,
+  "signal_level": "none",
+  "heat_score": 39.4,
+  "composite_score": 39.4,
+  "timing_score": 0.0,
   "hot_categories": 0,
-  "zone": "warm",
+  "zone": "cold",
   "stale": false,
+  "timing": {
+    "score": 0.0,
+    "score_halving": 0.0,
+    "score_low": 0.0,
+    "days_since_halving": 896,
+    "days_since_low": 95,
+    "last_halving": "2024-04-20",
+    "next_halving": "2028-04-15",
+    "next_halving_estimated": true,
+    "cycle_low_date": "2026-06-30",
+    "cycle_low_price": 58525.08,
+    "window_halving": "2028-04-15",
+    "expected_window_by_halving": {
+      "center": "2029-10-02",
+      "full_from": "2029-08-03",
+      "full_to": "2029-12-01",
+      "from": "2028-12-06",
+      "to": "2030-07-29"
+    },
+    "expected_window_by_low": {
+      "center": "2029-05-28",
+      "full_from": "2029-03-29",
+      "full_to": "2029-07-27",
+      "from": "2028-08-01",
+      "to": "2030-03-24"
+    },
+    "center_halving_days": 535,
+    "center_low_days": 1063,
+    "flat_days": 60,
+    "ramp_days": 240,
+    "past_tops_halving_days": {
+      "2013-12-04": 371,
+      "2017-12-16": 525,
+      "2021-11-08": 546,
+      "2025-10-06": 534
+    },
+    "past_tops_low_days": {
+      "2013-12-04": 747,
+      "2017-12-16": 1067,
+      "2021-11-08": 1059,
+      "2025-10-06": 1062
+    }
+  },
   "categories": {
     "onchain_valuation": {
       "label": "鏈上估值",
       "weight": 0.35,
-      "score": 66.9,
+      "score": 60.5,
       "status": "ok",
       "stale": false,
       "indicators": {
         "mvrv_z": {
           "label": "MVRV Z-score",
           "unit": "",
+          "role": "score",
+          "description": "市值與實現市值（所有幣最後移動時價格的總和）的差距，以標準差衡量。越高代表整體未實現獲利越大。",
           "value": 1.0068,
           "score": 63.9,
+          "percentile": 43.8,
           "as_of": "2026-10-02",
           "stale": false,
           "status": "ok",
@@ -36,8 +86,11 @@
         "nupl": {
           "label": "NUPL",
           "unit": "",
+          "role": "score",
+          "description": "淨未實現損益占市值比例。接近 0.75 以上歷來是極度貪婪區。",
           "value": 0.365,
           "score": 74.8,
+          "percentile": 44.5,
           "as_of": "2026-10-02",
           "stale": false,
           "status": "ok",
@@ -54,8 +107,11 @@
         "puell": {
           "label": "Puell Multiple",
           "unit": "",
+          "role": "score",
+          "description": "礦工每日收入 ÷ 365 日均。礦工收入異常高時，往往是價格過熱。",
           "value": 1.0466,
-          "score": 52.0,
+          "score": 26.1,
+          "percentile": 52.0,
           "as_of": "2026-10-02",
           "stale": false,
           "status": "ok",
@@ -65,8 +121,11 @@
         "rp_multiple": {
           "label": "實現價格倍數",
           "unit": "x",
+          "role": "score",
+          "description": "價格 ÷ 實現價格（市場平均持幣成本）。數學上等於 MVRV。",
           "value": 1.5747,
           "score": 77.0,
+          "percentile": 44.5,
           "as_of": "2026-10-02",
           "stale": false,
           "status": "ok",
@@ -81,56 +140,79 @@
           }
         }
       },
-      "effective_weight": 0.35
+      "effective_weight": 0.437
     },
     "holder_behavior": {
       "label": "持有者行為",
       "weight": 0.2,
-      "score": 4.4,
-      "status": "partial",
+      "score": null,
+      "status": "unavailable",
       "stale": false,
       "indicators": {
         "exchange_netflow_30d_pct": {
           "label": "交易所 30 日淨流入",
           "unit": "% 流通量",
+          "role": "ref",
+          "description": "流入交易所減流出的 30 日合計。在頂部出貨與底部投降時都可能升高，方向不明確，因此僅供參考。",
           "value": -0.4622,
-          "score": 4.4,
+          "score": null,
+          "percentile": 4.4,
           "as_of": "2026-10-02",
           "stale": false,
           "status": "ok",
           "method": "percentile",
           "history_days": 5617
         },
+        "exchange_balance_90d_pct": {
+          "label": "交易所餘額 90 日變化",
+          "unit": "% 流通量",
+          "role": "ref",
+          "description": "交易所持有 BTC 的 90 日變化。上升代表更多幣準備賣出。受交易所涵蓋範圍變動影響，僅供參考。",
+          "value": 0.1102,
+          "score": null,
+          "percentile": 67.9,
+          "as_of": "2026-10-02",
+          "stale": false,
+          "status": "ok",
+          "method": "percentile",
+          "history_days": 5551
+        },
         "lth_supply_change": {
           "label": "長期持有者供給變化",
+          "role": "score",
           "status": "unavailable",
           "reason": "長期持有者供給變化（需 Glassnode / CryptoQuant）"
         },
         "lth_sopr": {
           "label": "LTH-SOPR",
+          "role": "score",
           "status": "unavailable",
           "reason": "LTH-SOPR（需 Glassnode / CryptoQuant）"
         },
         "cdd_dormancy": {
           "label": "CDD / Dormancy",
+          "role": "score",
           "status": "unavailable",
           "reason": "CDD / Dormancy（需 Glassnode / CryptoQuant）"
         }
       },
-      "effective_weight": 0.2
+      "effective_weight": 0
     },
     "capital_flows": {
       "label": "資金流與機構",
       "weight": 0.2,
-      "score": 38.5,
+      "score": 9.6,
       "status": "ok",
       "stale": false,
       "indicators": {
         "etf_flow_30d": {
           "label": "ETF 30 日累計淨流入",
           "unit": "百萬美元",
+          "role": "score",
+          "description": "美國現貨 ETF 過去 30 日的淨申購合計。",
           "value": 2186.7,
-          "score": 56.2,
+          "score": 32.6,
+          "percentile": 56.2,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -140,8 +222,11 @@
         "etf_flow_momentum": {
           "label": "ETF 流入動能",
           "unit": "百萬美元",
+          "role": "score",
+          "description": "最近 30 日淨流入減前 30 日，正值代表流入在加速。",
           "value": -1566.2,
-          "score": 32.0,
+          "score": 0.0,
+          "percentile": 32.0,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -151,8 +236,11 @@
         "stable_growth_90d": {
           "label": "穩定幣 90 日增速",
           "unit": "%",
-          "value": 1.1046,
-          "score": 38.8,
+          "role": "score",
+          "description": "穩定幣總供給 90 日成長率，代表場內可用的新資金。",
+          "value": 1.1023,
+          "score": 5.8,
+          "percentile": 38.8,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -162,8 +250,11 @@
         "coinbase_premium_7d": {
           "label": "Coinbase 溢價（7 日均）",
           "unit": "%",
-          "value": -0.033,
-          "score": 27.1,
+          "role": "score",
+          "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
+          "value": -0.0339,
+          "score": 0.0,
+          "percentile": 26.7,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -171,20 +262,23 @@
           "history_days": 1497
         }
       },
-      "effective_weight": 0.2
+      "effective_weight": 0.25
     },
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 29.5,
+      "score": 5.7,
       "status": "ok",
       "stale": false,
       "indicators": {
         "funding_7d_ann": {
           "label": "資金費率 7 日均（年化）",
           "unit": "%",
-          "value": 4.1733,
-          "score": 32.2,
+          "role": "score",
+          "description": "永續合約多方付給空方的費率。越高代表槓桿做多越擁擠。",
+          "value": 4.2808,
+          "score": 0.0,
+          "percentile": 32.8,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -194,19 +288,25 @@
         "oi_to_mcap": {
           "label": "未平倉量 / 市值",
           "unit": "%",
-          "value": 0.1854,
-          "score": 10.1,
-          "as_of": "2026-10-01",
+          "role": "score",
+          "description": "全市場 BTC 合約未平倉量占市值比例，代表槓桿規模。",
+          "value": 0.0,
+          "score": 0.0,
+          "percentile": 0.8,
+          "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 179
+          "history_days": 181
         },
         "basis_ann": {
           "label": "期現基差（年化）",
           "unit": "%",
-          "value": 5.0559,
-          "score": 46.2,
+          "role": "score",
+          "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
+          "value": 5.0506,
+          "score": 17.1,
+          "percentile": 46.1,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -214,44 +314,37 @@
           "history_days": 2069
         }
       },
-      "effective_weight": 0.15
+      "effective_weight": 0.187
     },
     "sentiment_cycle": {
-      "label": "情緒與週期",
+      "label": "情緒",
       "weight": 0.1,
-      "score": 48.0,
+      "score": 76.0,
       "status": "partial",
       "stale": false,
       "indicators": {
         "fear_greed_7d": {
           "label": "恐懼貪婪指數（7 日均）",
           "unit": "",
+          "role": "score",
+          "description": "alternative.me 綜合波動、成交量、社群與搜尋的情緒指數（0–100）。",
           "value": 71.5714,
-          "score": 84.4,
+          "score": 76.0,
+          "percentile": 84.4,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
           "method": "percentile",
           "history_days": 3158
         },
-        "days_since_halving": {
-          "label": "距最近一次減半",
-          "unit": "天",
-          "value": 896.0,
-          "score": 11.7,
-          "as_of": "2026-10-03",
-          "stale": false,
-          "status": "ok",
-          "method": "halving",
-          "expected_top_days": 621
-        },
         "google_trends": {
           "label": "Google Trends「bitcoin」",
+          "role": "score",
           "status": "unavailable",
           "reason": "Google Trends「bitcoin」（無官方免費 API，第一版跳過）"
         }
       },
-      "effective_weight": 0.1
+      "effective_weight": 0.125
     }
   },
   "cycle_tops": [
@@ -296,7 +389,7 @@
     },
     "open_interest": {
       "fetched": true,
-      "last_date": "2026-10-01",
+      "last_date": "2026-10-03",
       "stale": false,
       "available": true,
       "errors": []
@@ -323,6 +416,13 @@
       "errors": []
     }
   },
-  "zone_rules": "cold < 40 ≤ warm < 65 ≤ hot；top_zone = 總分 ≥ 80 且熱類別（≥80）≥ 3",
-  "disclaimer": "僅供參考，不構成投資建議。"
+  "rules": {
+    "top_signal": "頂部訊號 = 熱度（7 日均）× 時機 ÷ 100",
+    "signal_level": "none < 50 ≤ window（頂部窗口）< 70 ≤ alert（高度警戒）",
+    "zone": "頂部訊號 ≥ 50 時為 top_zone；否則依熱度：cold < 40 ≤ warm < 65 ≤ hot",
+    "composite_score": "與 heat_score 相同（保留舊欄位名稱）",
+    "hot_categories": "類別分數 ≥ 80 的類別數"
+  },
+  "disclaimer": "僅供參考，不構成投資建議。",
+  "private": false
 }
