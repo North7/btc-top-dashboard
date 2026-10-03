@@ -130,6 +130,16 @@ def build_indicators(raw: dict[str, pd.DataFrame]) -> pd.DataFrame:
     ind["puell"] = cm["IssTotUSD"] / cm["IssTotUSD"].rolling(365, min_periods=300).mean()
     ind["rp_multiple"] = cm["PriceUSD"] / ind["realized_price"]
 
+    # 底部用：Hash Ribbons（算力 30 日均 ÷ 60 日均 − 1，%）；低於 0 代表礦工投降
+    ind["hash_ribbon"] = (cm["HashRate"].rolling(30, min_periods=25).mean()
+                          / cm["HashRate"].rolling(60, min_periods=50).mean() - 1) * 100
+
+    # 底部用：AHR999 =（價格 ÷ 200 日幾何平均）×（價格 ÷ 長期指數成長估值）
+    age = (idx - pd.Timestamp("2009-01-03")).days.astype(float)
+    growth = pd.Series(10 ** (5.84 * np.log10(age) - 17.01), index=idx)
+    gm200 = np.exp(np.log(cm["PriceUSD"]).rolling(200, min_periods=200).mean())
+    ind["ahr999"] = (cm["PriceUSD"] / gm200) * (cm["PriceUSD"] / growth)
+
     # 二、持有者行為：公開版無免費可用資料（交易所流量實測方向失效，已移除）；私人版見下方 BGeometrics
 
     # 三、資金流
@@ -330,4 +340,98 @@ def signal_level(sig: float) -> str:
         return "alert"
     if sig >= SIGNAL_WINDOW:
         return "window"
+    return "none"
+
+
+# =====================================================================
+# 底部訊號（2026-10 加入）
+# 參數只依 2015、2018、2022 三次底部與中段假底部（2019-12、2020-03、2021-07、2024-08）決定，
+# 未參考 2026 年資料，因此本輪（2026）的結果是樣本外檢驗。
+# 底部訊號 = 冷度（7 日均）× 底部時機 ÷ 100
+# =====================================================================
+BOTTOM_WINDOW = 50  # 底部訊號 ≥ 此值：底部區
+BOTTOM_STRONG = 70  # 底部訊號 ≥ 此值：強烈底部
+COLD_WEIGHTS = {"valuation": 0.5, "miners": 0.3, "price": 0.2}
+RIBBON_FULL = 5.0   # 近 90 日 Hash Ribbon 最深 −5% 視為完全投降（100 分）
+
+COLD_INDICATORS = {
+    # key: (群組, 名稱, 來源欄位, 單位, 說明)
+    "cold_mvrv": ("valuation", "MVRV（價格 ÷ 實現價格）", "rp_multiple", "x",
+                  "低於 1 代表價格跌破市場平均持幣成本。過去三次底部為 0.56、0.69、0.75。"),
+    "cold_nupl": ("valuation", "NUPL", "nupl", "",
+                  "淨未實現損益。過去三次底部都轉為負值（整體市場帳面虧損）。"),
+    "cold_puell": ("miners", "Puell Multiple", "puell", "",
+                   "礦工收入相對一年均值。過去三次底部為 0.31、0.39、0.48。2024 減半後礦工收入結構性下降，可能使此項偏冷。"),
+    "cold_ribbon": ("miners", "Hash Ribbons（近 90 日最深）", "hash_ribbon_min90", "%",
+                    "算力 30 日均跌破 60 日均代表礦工關機投降，常出現在底部前後；但減半後與政策事件也會發生，僅作輔助。"),
+    "cold_ahr999": ("price", "AHR999", "ahr999", "",
+                    "價格相對 200 日幾何平均與長期指數成長曲線的位置。過去三次底部為 0.23、0.27、0.26；慣用 1.2 為定投線（中性）。"),
+}
+COLD_GROUP_LABEL = {"valuation": "估值", "miners": "礦工", "price": "價格結構"}
+# 中性點固定的指標（其頂部讀數遞減過快，外推的預期頂部會低於預期底部，中點因此失去意義）：
+# Puell 定義為「礦工收入 ÷ 一年均值」，1.0 即中性；AHR999 慣用 1.2 為定投線。
+# Pi Cycle（111 日均 ÷ 350 日均×2）已測試：加入頂部訊號後 2021 頂部下降、窗外假訊號上升，未採用。
+COLD_NEUTRAL_FIXED = {"cold_puell": 1.0, "cold_ahr999": 1.2}
+
+
+def compute_cold(ind: pd.DataFrame, tops, bottoms):
+    """冷度（0–100）。週期法：本輪預期底部 = 過去底部讀數擬合外推；中性 = 本輪預期底部與預期頂部的中點；
+    冷度 = (中性 − 當前) ÷ (中性 − 預期底部) × 100（0–120）。Puell 中性固定為 1.0。Hash Ribbons 依投降深度計分。"""
+    k = _cycle_index(ind.index, tops)
+    ind = ind.copy()
+    ind["hash_ribbon_min90"] = ind["hash_ribbon"].rolling(90, min_periods=30).min()
+    scores = pd.DataFrame(index=ind.index)
+    meta = {}
+    for key, (grp, label, col, unit, desc) in COLD_INDICATORS.items():
+        s = ind[col]
+        if key == "cold_ribbon":
+            scores[key] = (-s / RIBBON_FULL * 100).clip(0, 100)
+            meta[key] = {"method": "ribbon", "full_at": -RIBBON_FULL}
+            continue
+        bot_pts = [(i + 0.5, s.get(b)) for i, b in enumerate(bottoms) if pd.notna(s.get(b))]
+        top_pts = [(i, s.get(t)) for i, t in enumerate(tops) if pd.notna(s.get(t))]
+        bot = k.map(lambda i: _fit(*zip(*bot_pts), i - 0.5))
+        top = k.map(lambda i: _fit(*zip(*top_pts), i))
+        neutral = (bot + top) / 2 if key not in COLD_NEUTRAL_FIXED else pd.Series(COLD_NEUTRAL_FIXED[key], index=s.index)
+        scores[key] = ((neutral - s) / (neutral - bot) * 100).clip(0, 120)
+        meta[key] = {"method": "cycle_bottom", "expected_bottom": float(bot.iloc[-1]), "neutral": float(neutral.iloc[-1]),
+                     "past_bottoms": {str(bottoms[int(x - 0.5)].date()): v for x, v in bot_pts}}
+    filled = scores.ffill()
+    groups = pd.DataFrame({g: filled[[k_ for k_, d in COLD_INDICATORS.items() if d[0] == g]].mean(axis=1)
+                           for g in COLD_WEIGHTS})
+    cold = sum(groups[g] * w for g, w in COLD_WEIGHTS.items()).clip(0, 100)
+    return scores, groups, cold, meta, ind["hash_ribbon_min90"]
+
+
+def compute_bottom_timing(index: pd.DatetimeIndex, price: pd.Series, tops, bottoms):
+    """底部時機（0–100）：距上次頂部天數、距上次減半天數，各以過去三次底部的平均為中心。"""
+    days = pd.Series(index, index=index)
+    days_halving = (days - days.apply(lambda d: HALVINGS[HALVINGS <= d].max())).dt.days
+    anchors = np.array([price[PRE_TOP_MONTH].idxmax()] + list(tops), dtype="datetime64[ns]")
+    pos = np.searchsorted(anchors, index.values, side="left") - 1
+    last_top = pd.Series([pd.Timestamp(anchors[i]) if i >= 0 else pd.NaT for i in pos], index=index)
+    days_top = (days - last_top).dt.days
+    b_top = [(b - tops[i]).days for i, b in enumerate(bottoms)]
+    b_h = [int(days_halving[b]) for b in bottoms]
+    c_top, c_h = float(np.mean(b_top)), float(np.mean(b_h))
+    tt = _trap(days_top, c_top) * 100
+    th = _trap(days_halving, c_h) * 100
+    df = pd.DataFrame({"days_since_top": days_top, "days_since_halving": days_halving,
+                       "timing_top": tt, "timing_halving": th, "timing": (tt + th) / 2, "last_top": last_top})
+    info = {"center_top_days": round(c_top), "center_halving_days": round(c_h),
+            "flat_days": TIMING_FLAT, "ramp_days": TIMING_RAMP,
+            "past_bottoms_top_days": dict(zip([str(b.date()) for b in bottoms], b_top)),
+            "past_bottoms_halving_days": dict(zip([str(b.date()) for b in bottoms], b_h))}
+    return df, info
+
+
+def bottom_signal(cold: pd.Series, timing: pd.Series) -> pd.Series:
+    return cold.rolling(7, min_periods=1).mean() * timing / 100
+
+
+def bottom_level(sig: float) -> str:
+    if sig >= BOTTOM_STRONG:
+        return "strong"
+    if sig >= BOTTOM_WINDOW:
+        return "zone"
     return "none"

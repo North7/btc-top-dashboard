@@ -19,9 +19,11 @@ import pandas as pd
 
 from btc_top import sources
 from btc_top.page import render_page
-from btc_top.scoring import (CATEGORIES, HALVINGS, SIGNAL_ALERT, SIGNAL_WINDOW, TIMING_FLAT, TIMING_RAMP,
-                             build_indicators, compute_heat, compute_timing, heat_zone, indicator_defs,
-                             signal_level, top_signal, unavailable_defs)
+from btc_top.scoring import (BOTTOM_STRONG, BOTTOM_WINDOW, CATEGORIES, COLD_GROUP_LABEL, COLD_INDICATORS,
+                             COLD_WEIGHTS, HALVINGS, SIGNAL_ALERT, SIGNAL_WINDOW, TIMING_FLAT, TIMING_RAMP,
+                             bottom_level, bottom_signal, build_indicators, compute_bottom_timing, compute_cold,
+                             compute_heat, compute_timing, heat_zone, indicator_defs, signal_level, top_signal,
+                             unavailable_defs)
 
 ROOT = Path(__file__).parent
 PRIVATE = "--private" in sys.argv
@@ -140,6 +142,69 @@ def seed_private():
         shutil.copytree(ROOT / "data" / "raw", RAW)
 
 
+def build_bottom(ind, hist, cold_sc, cold_grp, cold_meta, ribbon_min90, btim, binfo, tim, tops, bottoms, last):
+    """底部訊號與週期結構驗證（本輪低點是否就是週期底部）。"""
+    price = ind["price"]
+    b = btim.loc[last]
+    sig = float(hist.loc[last, "bottom_signal"])
+    comps = {}
+    for key, (grp, label, col, unit, desc) in COLD_INDICATORS.items():
+        src = ribbon_min90 if col == "hash_ribbon_min90" else ind[col]
+        comps[key] = {"label": label, "group": COLD_GROUP_LABEL[grp], "unit": unit, "description": desc,
+                      "value": r(src.ffill().iloc[-1]), "score": r(cold_sc[key].ffill().iloc[-1], 1),
+                      **{k: (r(v) if isinstance(v, float) else v) for k, v in cold_meta[key].items()}}
+    last_top = pd.Timestamp(b["last_top"])
+    last_h = HALVINGS[HALVINGS <= last].max()
+    by_top = window(last_top + pd.Timedelta(days=binfo["center_top_days"]))
+    by_h = window(last_h + pd.Timedelta(days=binfo["center_halving_days"]))
+    decisive = max(by_top["full_to"], by_h["full_to"])  # 兩個滿分窗口都結束的日期
+
+    # 過去底部 vs 本輪低點
+    def stats(d, top):
+        d = pd.Timestamp(d)
+        return {"date": str(d.date()), "price": r(price[d], 2), "days_since_top": (d - top).days,
+                "drawdown_pct": r((price[d] / price[top] - 1) * 100, 1), "mvrv": r(ind.loc[d, "rp_multiple"], 3),
+                "nupl": r(ind.loc[d, "nupl"], 3), "bottom_signal_max_cycle": None}
+    past = []
+    for i, bd in enumerate(bottoms):
+        st = stats(bd, tops[i])
+        seg = hist.loc[tops[i]:tops[i + 1], "bottom_signal"]
+        st["bottom_signal_max_cycle"] = r(seg.max(), 1)
+        st["days_bottom_zone"] = int((seg >= BOTTOM_WINDOW).sum())
+        past.append(st)
+    low_date = pd.Timestamp(tim.loc[last, "cycle_low_date"])
+    cur = stats(low_date, last_top)
+    seg = hist.loc[last_top:, "bottom_signal"]
+    cur["bottom_signal_max_cycle"] = r(seg.max(), 1)
+    cur["bottom_signal_max_date"] = str(seg.idxmax().date()) if seg.notna().any() else None
+    cur["days_bottom_zone"] = int((seg >= BOTTOM_WINDOW).sum())
+    mvrv_lt1 = int((ind.loc[last_top:, "rp_multiple"] < 1).sum())
+    today = str(last.date())
+    if today <= decisive:
+        status = "testing"
+        verdict = (f"驗證中：若到 {decisive} 為止都沒有跌破本輪低點 ${cur['price']:,.0f}（{cur['date']}），"
+                   f"支持「本輪低點即週期底部、ETF 時代熊市變淺」；若之後出現更低的低點且 MVRV 跌破 1，則代表底部尚未出現。")
+    else:
+        status = "supported" if mvrv_lt1 == 0 else "classic"
+        verdict = (f"底部時間窗口已於 {decisive} 結束，本輪低點 {cur['date']}（${cur['price']:,.0f}）未被跌破，"
+                   + ("且估值未出現投降（MVRV 從未跌破 1），支持「熊市變淺」。" if mvrv_lt1 == 0
+                      else "期間曾出現估值投降（MVRV 跌破 1），屬傳統型底部。"))
+    return {
+        "signal": r(sig, 1), "level": bottom_level(sig),
+        "cold_score": r(float(hist.loc[last, "cold"]), 1),
+        "groups": {COLD_GROUP_LABEL[g]: {"score": r(cold_grp[g].ffill().iloc[-1], 1), "weight": w}
+                   for g, w in COLD_WEIGHTS.items()},
+        "indicators": comps,
+        "timing": {"score": r(b["timing"], 1), "score_top": r(b["timing_top"], 1), "score_halving": r(b["timing_halving"], 1),
+                   "days_since_top": int(b["days_since_top"]), "days_since_halving": int(b["days_since_halving"]),
+                   "last_top": str(last_top.date()), "last_halving": str(last_h.date()),
+                   "window_by_top": by_top, "window_by_halving": by_h, **binfo},
+        "cycle_test": {"status": status, "decisive_date": decisive, "verdict": verdict,
+                       "current_low": cur, "past_bottoms": past, "days_mvrv_below_1_this_cycle": mvrv_lt1},
+        "note": "參數只依 2015、2018、2022 底部與中段假底部決定，本輪為樣本外檢驗。",
+    }
+
+
 def main():
     today = pd.Timestamp(datetime.now(timezone.utc).date())
     seed_private()
@@ -153,14 +218,21 @@ def main():
     scores, pcts, cat_scores, heat, meta, tops, bottoms = compute_heat(ind, PRIVATE)
     tim, tinfo = compute_timing(ind.index, ind["price"], tops)
     signal = top_signal(heat, tim["timing"])
+    cold_sc, cold_grp, cold, cold_meta, ribbon_min90 = compute_cold(ind, tops, bottoms)
+    btim, binfo = compute_bottom_timing(ind.index, ind["price"], tops, bottoms)
+    bsig = bottom_signal(cold, btim["timing"])
 
     # ---- 歷史時間序列 ----
     ind.to_csv(DATA / "indicators.csv", index_label="date", float_format="%.6g")
     hist = pd.concat({"price": ind["price"], "top_signal": signal, "heat": heat,
                       "heat_7d": heat.rolling(7, min_periods=1).mean(), "timing": tim["timing"],
                       "timing_halving": tim["timing_halving"], "timing_low": tim["timing_low"],
-                      "days_since_halving": tim["days_since_halving"], "days_since_low": tim["days_since_low"]},
+                      "days_since_halving": tim["days_since_halving"], "days_since_low": tim["days_since_low"],
+                      "bottom_signal": bsig, "cold": cold, "cold_7d": cold.rolling(7, min_periods=1).mean(),
+                      "bottom_timing": btim["timing"], "days_since_top": btim["days_since_top"]},
                      axis=1)
+    hist = hist.join(cold_grp.add_prefix("coldgrp_")).join(cold_sc.add_prefix("coldscore_"))
+    hist["hash_ribbon_min90"] = ribbon_min90
     hist = hist.join(cat_scores.add_prefix("cat_")).join(scores.add_prefix("score_"))
     hist = hist.dropna(subset=["heat"]).loc["2011-01-01":]
     hist.to_csv(DATA / "scores.csv", index_label="date", float_format="%.4g")
@@ -229,6 +301,7 @@ def main():
         "expected_window_by_low": window(low_date + pd.Timedelta(days=tinfo["center_low_days"])),
         **tinfo,
     }
+    bottom = build_bottom(ind, hist, cold_sc, cold_grp, cold_meta, ribbon_min90, btim, binfo, tim, tops, bottoms, last)
     latest = {
         "date": str(today.date()),
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -243,6 +316,11 @@ def main():
         "zone": "top_zone" if sig >= SIGNAL_WINDOW else heat_zone(h),
         "stale": any(c["stale"] for c in categories.values()),
         "timing": timing,
+        "bottom_signal": bottom["signal"],
+        "bottom_level": bottom["level"],
+        "cold_score": bottom["cold_score"],
+        "bottom_timing_score": bottom["timing"]["score"],
+        "bottom": bottom,
         "categories": categories,
         "cycle_tops": [str(x.date()) for x in tops],
         "cycle_bottoms": [str(b.date()) for b in bottoms],
@@ -253,6 +331,8 @@ def main():
             "zone": f"頂部訊號 ≥ {SIGNAL_WINDOW} 時為 top_zone；否則依熱度：cold < 40 ≤ warm < 65 ≤ hot",
             "composite_score": "與 heat_score 相同（保留舊欄位名稱）",
             "hot_categories": "類別分數 ≥ 80 的類別數",
+            "bottom_signal": "底部訊號 = 冷度（7 日均）× 底部時機 ÷ 100",
+            "bottom_level": f"none < {BOTTOM_WINDOW} ≤ zone（底部區）< {BOTTOM_STRONG} ≤ strong（強烈底部）",
         },
         "disclaimer": "僅供參考，不構成投資建議。",
         "private": PRIVATE,
@@ -261,6 +341,8 @@ def main():
     (DOCS / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2))
     render_page(latest, hist, ind, DOCS / "index.html", defs, PRIVATE)
     (DOCS / ".nojekyll").touch()
+    print(f"底部訊號 {latest['bottom_signal']}（{latest['bottom_level']}） 冷度 {latest['cold_score']} "
+          f"底部時機 {latest['bottom_timing_score']}　{bottom['cycle_test']['verdict']}")
     print(f"完成：{latest['date']} 頂部訊號 {latest['top_signal']}（{latest['signal_level']}） "
           f"熱度 {latest['heat_score']} 時機 {latest['timing_score']} zone={latest['zone']} "
           f"熱類別={hot} stale={latest['stale']}")

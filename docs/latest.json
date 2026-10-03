@@ -1,6 +1,6 @@
 {
   "date": "2026-10-03",
-  "generated_at": "2026-10-03T17:14:54Z",
+  "generated_at": "2026-10-03T17:52:39Z",
   "price_usd": 84517.52,
   "price_date": "2026-10-02",
   "top_signal": 0.0,
@@ -54,6 +54,192 @@
       "2025-10-06": 1062
     }
   },
+  "bottom_signal": 21.7,
+  "bottom_level": "none",
+  "cold_score": 20.3,
+  "bottom_timing_score": 100.0,
+  "bottom": {
+    "signal": 21.7,
+    "level": "none",
+    "cold_score": 20.3,
+    "groups": {
+      "估值": {
+        "score": 0.0,
+        "weight": 0.5
+      },
+      "礦工": {
+        "score": 21.4,
+        "weight": 0.3
+      },
+      "價格結構": {
+        "score": 69.4,
+        "weight": 0.2
+      }
+    },
+    "indicators": {
+      "cold_mvrv": {
+        "label": "MVRV（價格 ÷ 實現價格）",
+        "group": "估值",
+        "unit": "x",
+        "description": "低於 1 代表價格跌破市場平均持幣成本。過去三次底部為 0.56、0.69、0.75。",
+        "value": 1.5747,
+        "score": 0.0,
+        "method": "cycle_bottom",
+        "expected_bottom": 0.8889,
+        "neutral": 1.334,
+        "past_bottoms": {
+          "2015-01-14": 0.5635797199999999,
+          "2018-12-15": 0.69048064,
+          "2022-11-09": 0.7539586961790001
+        }
+      },
+      "cold_nupl": {
+        "label": "NUPL",
+        "group": "估值",
+        "unit": "",
+        "description": "淨未實現損益。過去三次底部都轉為負值（整體市場帳面虧損）。",
+        "value": 0.365,
+        "score": 0.0,
+        "method": "cycle_bottom",
+        "expected_bottom": -0.0683,
+        "neutral": 0.2214,
+        "past_bottoms": {
+          "2015-01-14": -0.7743718670359536,
+          "2018-12-15": -0.44826652923969035,
+          "2022-11-09": -0.32633260292363087
+        }
+      },
+      "cold_puell": {
+        "label": "Puell Multiple",
+        "group": "礦工",
+        "unit": "",
+        "description": "礦工收入相對一年均值。過去三次底部為 0.31、0.39、0.48。2024 減半後礦工收入結構性下降，可能使此項偏冷。",
+        "value": 1.0466,
+        "score": 0.0,
+        "method": "cycle_bottom",
+        "expected_bottom": 0.5939,
+        "neutral": 1.0,
+        "past_bottoms": {
+          "2015-01-14": 0.3123250950141825,
+          "2018-12-15": 0.38937597321327183,
+          "2022-11-09": 0.4786260405008019
+        }
+      },
+      "cold_ribbon": {
+        "label": "Hash Ribbons（近 90 日最深）",
+        "group": "礦工",
+        "unit": "%",
+        "description": "算力 30 日均跌破 60 日均代表礦工關機投降，常出現在底部前後；但減半後與政策事件也會發生，僅作輔助。",
+        "value": -2.1416,
+        "score": 42.8,
+        "method": "ribbon",
+        "full_at": -5.0
+      },
+      "cold_ahr999": {
+        "label": "AHR999",
+        "group": "價格結構",
+        "unit": "",
+        "description": "價格相對 200 日幾何平均與長期指數成長曲線的位置。過去三次底部為 0.23、0.27、0.26；慣用 1.2 為定投線（中性）。",
+        "value": 0.5659,
+        "score": 69.4,
+        "method": "cycle_bottom",
+        "expected_bottom": 0.286,
+        "neutral": 1.2,
+        "past_bottoms": {
+          "2015-01-14": 0.22544705078982882,
+          "2018-12-15": 0.27212766338182914,
+          "2022-11-09": 0.25710334600285967
+        }
+      }
+    },
+    "timing": {
+      "score": 100.0,
+      "score_top": 100.0,
+      "score_halving": 100.0,
+      "days_since_top": 362,
+      "days_since_halving": 896,
+      "last_top": "2025-10-06",
+      "last_halving": "2024-04-20",
+      "window_by_top": {
+        "center": "2026-10-20",
+        "full_from": "2026-08-21",
+        "full_to": "2026-12-19",
+        "from": "2025-12-24",
+        "to": "2027-08-16"
+      },
+      "window_by_halving": {
+        "center": "2026-08-27",
+        "full_from": "2026-06-28",
+        "full_to": "2026-10-26",
+        "from": "2025-10-31",
+        "to": "2027-06-23"
+      },
+      "center_top_days": 379,
+      "center_halving_days": 859,
+      "flat_days": 60,
+      "ramp_days": 240,
+      "past_bottoms_top_days": {
+        "2015-01-14": 406,
+        "2018-12-15": 364,
+        "2022-11-09": 366
+      },
+      "past_bottoms_halving_days": {
+        "2015-01-14": 777,
+        "2018-12-15": 889,
+        "2022-11-09": 912
+      }
+    },
+    "cycle_test": {
+      "status": "testing",
+      "decisive_date": "2026-12-19",
+      "verdict": "驗證中：若到 2026-12-19 為止都沒有跌破本輪低點 $58,525（2026-06-30），支持「本輪低點即週期底部、ETF 時代熊市變淺」；若之後出現更低的低點且 MVRV 跌破 1，則代表底部尚未出現。",
+      "current_low": {
+        "date": "2026-06-30",
+        "price": 58525.08,
+        "days_since_top": 267,
+        "drawdown_pct": -53.1,
+        "mvrv": 1.103,
+        "nupl": 0.093,
+        "bottom_signal_max_cycle": 57.3,
+        "bottom_signal_max_date": "2026-07-02",
+        "days_bottom_zone": 19
+      },
+      "past_bottoms": [
+        {
+          "date": "2015-01-14",
+          "price": 175.64,
+          "days_since_top": 406,
+          "drawdown_pct": -84.5,
+          "mvrv": 0.564,
+          "nupl": -0.774,
+          "bottom_signal_max_cycle": 72.7,
+          "days_bottom_zone": 57
+        },
+        {
+          "date": "2018-12-15",
+          "price": 3185.07,
+          "days_since_top": 364,
+          "drawdown_pct": -83.8,
+          "mvrv": 0.69,
+          "nupl": -0.448,
+          "bottom_signal_max_cycle": 94.6,
+          "days_bottom_zone": 129
+        },
+        {
+          "date": "2022-11-09",
+          "price": 15758.29,
+          "days_since_top": 366,
+          "drawdown_pct": -76.7,
+          "mvrv": 0.754,
+          "nupl": -0.326,
+          "bottom_signal_max_cycle": 83.2,
+          "days_bottom_zone": 212
+        }
+      ],
+      "days_mvrv_below_1_this_cycle": 0
+    },
+    "note": "參數只依 2015、2018、2022 底部與中段假底部決定，本輪為樣本外檢驗。"
+  },
   "categories": {
     "onchain_valuation": {
       "label": "鏈上估值",
@@ -80,7 +266,7 @@
             "2013-12-04": 7.704061973442023,
             "2017-12-16": 9.354234932070232,
             "2021-11-08": 3.5338955722930834,
-            "2025-10-06": 2.5298647876421483
+            "2025-10-06": 2.529864787642148
           }
         },
         "nupl": {
@@ -136,7 +322,7 @@
             "2013-12-04": 4.718179179999999,
             "2017-12-16": 4.43076633,
             "2021-11-08": 2.854649564891,
-            "2025-10-06": 2.287145426879909
+            "2025-10-06": 2.2871454268799094
           }
         }
       },
@@ -210,8 +396,8 @@
           "unit": "%",
           "role": "score",
           "description": "穩定幣總供給 90 日成長率，代表場內可用的新資金。",
-          "value": 1.1023,
-          "score": 5.8,
+          "value": 1.1043,
+          "score": 5.9,
           "percentile": 38.8,
           "as_of": "2026-10-03",
           "stale": false,
@@ -224,9 +410,9 @@
           "unit": "%",
           "role": "score",
           "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
-          "value": -0.0332,
+          "value": -0.0357,
           "score": 0.0,
-          "percentile": 27.1,
+          "percentile": 25.8,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -239,7 +425,7 @@
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 5.4,
+      "score": 5.5,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -248,9 +434,9 @@
           "unit": "%",
           "role": "score",
           "description": "永續合約多方付給空方的費率。越高代表槓桿做多越擁擠。",
-          "value": 3.523,
+          "value": 3.9316,
           "score": 0.0,
-          "percentile": 27.3,
+          "percentile": 30.2,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -276,9 +462,9 @@
           "unit": "%",
           "role": "score",
           "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
-          "value": 5.021,
-          "score": 16.1,
-          "percentile": 45.5,
+          "value": 5.0348,
+          "score": 16.5,
+          "percentile": 45.8,
           "as_of": "2026-10-03",
           "stale": false,
           "status": "ok",
@@ -393,7 +579,9 @@
     "signal_level": "none < 50 ≤ window（頂部窗口）< 70 ≤ alert（高度警戒）",
     "zone": "頂部訊號 ≥ 50 時為 top_zone；否則依熱度：cold < 40 ≤ warm < 65 ≤ hot",
     "composite_score": "與 heat_score 相同（保留舊欄位名稱）",
-    "hot_categories": "類別分數 ≥ 80 的類別數"
+    "hot_categories": "類別分數 ≥ 80 的類別數",
+    "bottom_signal": "底部訊號 = 冷度（7 日均）× 底部時機 ÷ 100",
+    "bottom_level": "none < 50 ≤ zone（底部區）< 70 ≤ strong（強烈底部）"
   },
   "disclaimer": "僅供參考，不構成投資建議。",
   "private": false

@@ -33,7 +33,7 @@ def _ms_to_date(ms) -> pd.Timestamp:
 
 
 # ---------- Coin Metrics Community（鏈上） ----------
-CM_METRICS = ["PriceUSD", "CapMrktCurUSD", "CapMVRVCur", "IssTotUSD", "SplyCur"]
+CM_METRICS = ["PriceUSD", "CapMrktCurUSD", "CapMVRVCur", "IssTotUSD", "SplyCur", "HashRate"]
 
 
 def coinmetrics() -> pd.DataFrame:
