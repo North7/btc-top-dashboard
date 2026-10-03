@@ -1,6 +1,8 @@
-# BTC 週期訊號儀表板（btc-top-dashboard）
+# Tidemark · BTC 週期訊號（倉庫 North7/tidemark）
 
-產品名稱為「Tidemark」（副標「BTC 週期訊號」，品牌設定在 btc_top/page.py 的 BRAND）；倉庫名稱與 Pages 網址維持 btc-top-dashboard，不可改名（會使 latest.json 網址失效）。
+產品名稱為「Tidemark」（副標「BTC 週期訊號」，品牌設定在 btc_top/page.py 的 BRAND）。
+倉庫已於 2026-10 由 btc-top-dashboard 改名為 tidemark（舊 Pages 網址不保留相容）：
+儀表板 https://north7.github.io/tidemark/ ，每日數據 https://north7.github.io/tidemark/latest.json
 
 ## 給 Claude Code 的說明
 使用者不是工程師。請你負責全部的建置與部署，每一步用繁體中文簡短說明在做什麼。
@@ -122,7 +124,7 @@ MVRV Z-score、NUPL、Puell Multiple、Realized Price 倍數（價格 / 實現�
 ## 部署步驟（由 Claude Code 執行）
 1. 確認 git 與 GitHub CLI（gh）已安裝，沒有就引導安裝
 2. `gh auth login`：告訴使用者瀏覽器會跳出授權頁，請他點同意
-3. 建立公開倉庫 `btc-top-dashboard` 並推送
+3. 建立公開倉庫並推送（已完成，現為 `North7/tidemark`）
 4. 先在本地執行一次，回補歷史數據並確認輸出正確
 5. 設定 GitHub Actions 每日排程，並手動觸發一次確認成功
 6. 開啟 GitHub Pages（來源：main 分支 /docs）

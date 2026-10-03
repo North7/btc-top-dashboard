@@ -2,13 +2,12 @@
 
 比特幣週期像潮汐：頂部是滿潮、底部是退潮。Tidemark 每天標出這兩種水位訊號。
 
-（倉庫名稱 `btc-top-dashboard` 維持不變，以免 GitHub Pages 網址失效。）
 
 每天自動抓取 BTC 的公開市場數據（鏈上、資金流、衍生品、情緒、礦工），計算**頂部訊號 = 熱度 × 時機**與**底部訊號 = 冷度 × 底部時機**。
 用途是在 2028 年減半後的週期（預期頂部 2029–2030）辨識頂部區。**僅供參考，不構成投資建議，不含任何交易功能。**
 
-- 儀表板：`https://north7.github.io/btc-top-dashboard/`
-- 當日數據：`https://north7.github.io/btc-top-dashboard/latest.json`
+- 儀表板：`https://north7.github.io/tidemark/`
+- 當日數據：`https://north7.github.io/tidemark/latest.json`
 
 ## 三個數字
 

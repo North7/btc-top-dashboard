@@ -10,7 +10,7 @@ import pandas as pd
 
 from btc_top.scoring import BOTTOM_STRONG, BOTTOM_WINDOW, COLD_INDICATORS, INDICATORS, PCT_PIVOT, SIGNAL_ALERT, SIGNAL_WINDOW
 
-REPO = "https://github.com/North7/btc-top-dashboard"
+REPO = "https://github.com/North7/tidemark"
 BRAND = "Tidemark"          # 產品名稱（潮汐：頂部＝滿潮、底部＝退潮）；改名只需改這裡
 BRAND_ZH = "BTC 週期訊號"
 LOGO_SVG = ('<svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1">'
@@ -714,6 +714,7 @@ svg.chart{width:100%;display:block;touch-action:pan-y;overflow:visible}
 .legend button.off{opacity:.4}
 .legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
 .legend .static{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:4px 10px;border:1px dashed var(--line2);border-radius:99px;color:var(--mut);cursor:default}
+.legend i.area{height:10px;width:14px;border-radius:3px;background:color-mix(in srgb,var(--price) 30%,transparent);border-top:1.5px solid var(--price)}
 .legend i.dash{height:0;background:none!important;border-top:2px dashed var(--topline)}
 .legend i.dash.bot{border-top-color:var(--botline)}.legend i.dash.dot{border-top-style:dotted;opacity:.7}
 .mk-bot{display:none!important}body.mode-bottom .mk-bot{display:inline-flex!important}body.mode-bottom .mk-top{display:none!important}
@@ -797,19 +798,19 @@ __BANNERS__
     <div class="card-head"><div><div class="eyebrow">HISTORY</div><h3>歷史走勢</h3></div>
       <div class="seg" data-g="main"><button data-y="0" class="on">全部</button><button data-y="8">8 年</button><button data-y="4">4 年</button><button data-y="1">1 年</button></div></div>
     <div class="tip" id="tip-main"></div>
-    <svg class="chart" id="c-price" height="130" role="img" aria-label="BTC 價格（對數）"></svg>
-    <svg class="chart" id="c-main" height="250" role="img" aria-label="訊號歷史"></svg>
+    <svg class="chart" id="c-main" height="320" role="img" aria-label="訊號與價格歷史"></svg>
     <div class="legend" id="legend-main">
       <button data-s="sig"><i style="background:var(--s-sig)"></i>頂部訊號</button>
       <button data-s="heat"><i style="background:var(--s-heat)"></i>熱度</button>
-      <button data-s="tim"><i style="background:var(--s-tim)"></i>時機</button>
+      <button data-s="tim"><i style="height:0;background:none;border-top:2px dashed var(--s-tim)"></i>時機</button>
       <button data-s="bsig"><i style="background:var(--s-bot)"></i>底部訊號</button>
       <button data-s="cold"><i style="background:var(--s-cold)"></i>冷度</button>
+      <span class="static"><i class="area"></i>BTC 價格（右軸・對數）</span>
       <span class="static mk-top"><i class="dash"></i>過去頂部</span>
       <span class="static mk-bot"><i class="dash bot"></i>過去底部</span>
       <span class="static mk-bot"><i class="dash bot dot"></i>本輪低點（待驗證）</span>
     </div>
-    <p class="muted small" style="margin:10px 0 0">上圖價格（對數）、下圖分數（0–100），分開畫避免雙軸誤讀。虛線為 __WIN__ 與 __ALERT__ 門檻。點圖例開關線條；切換頂部／底部時會換成對應的預設線條。</p>
+    <p class="muted small" style="margin:10px 0 0">左軸為分數（0–100），右軸為 BTC 價格（對數）。兩者刻度不同，線條交叉沒有意義。虛線為 __WIN__ 與 __ALERT__ 門檻。點圖例開關線條；切換頂部／底部時會換成對應的預設線條。</p>
   </div>
 </section>
 
@@ -886,15 +887,16 @@ __BANNERS__
 <script>
 const D=__DATA__,IND=__IND__,TOPS=__TOPS__,BOTTOMS=__BOTTOMS__,CUR_LOW=__CUR_LOW__,WIN=__WIN__,ALERT=__ALERT__;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const TS=D.d.map(d=>Date.parse(d));  /* 橫軸依實際日期（資料一年前每週一點、最近一年每日一點） */
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const st={main:{years:0,hover:null,hide:new Set()},ind:{years:0,hover:null,k:null},mode:'top',modeApplied:null};
 function i0of(y){if(!y)return 0;const c=new Date(D.d[D.d.length-1]);c.setFullYear(c.getFullYear()-y);const s=c.toISOString().slice(0,10);return Math.max(0,D.d.findIndex(x=>x>=s));}
 function niceTicks(lo,hi){const span=hi-lo,step=10**Math.floor(Math.log10(span/3)),m=[1,2,5,10].find(k=>span/(k*step)<=5)*step,out=[];for(let v=Math.ceil(lo/m)*m;v<=hi;v+=m)out.push(+v.toFixed(10));return out;}
 function short(v){const a=Math.abs(v);return a>=1e6?(v/1e6)+'M':a>=1e3?(v/1e3)+'k':+v.toFixed(3)+'';}
 function chart(el,i0,series,o){
-  const W=el.clientWidth,H=+el.getAttribute('height'),L=44,R=10,T=10,B=o.axis?24:8,n=D.d.length-i0;
-  if(!W)return;
-  const x=i=>L+(W-L-R)*i/Math.max(1,n-1);
+  const W=el.clientWidth,H=+el.getAttribute('height'),L=44,R=o.bg?50:10,T=10,B=o.axis?24:8,n=D.d.length-i0;
+  if(!W)return;el.dataset.l=L;el.dataset.r=R;
+  const t0=TS[i0],t1=TS[D.d.length-1],x=i=>L+(W-L-R)*(TS[i0+i]-t0)/Math.max(1,t1-t0);
   let lo=o.min,hi=o.max;
   if(lo==null||hi==null){const v=[];series.forEach(s=>s.a.slice(i0).forEach(z=>{if(z!=null&&(!o.log||z>0))v.push(o.log?Math.log10(z):z)}));
     if(!v.length){el.innerHTML=`<text x="${W/2}" y="${H/2}" font-size="12" text-anchor="middle" fill="${css('--mut')}">無資料</text>`;return;}
@@ -906,23 +908,32 @@ function chart(el,i0,series,o){
   ticks.forEach(v=>{const yy=y(v);g+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="${grid}"/><text x="${L-6}" y="${yy+4}" font-size="11" text-anchor="end" fill="${mut}">${o.log?(v>=1000?(v/1000)+'k':v):short(v)}</text>`;});
   (o.thresholds||[]).forEach(v=>{g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--mut')}" stroke-dasharray="3 4" opacity=".7"/>`;});
   (o.marks||[{d:TOPS,c:'--topline',dash:'3 3',op:.6}]).forEach(m=>m.d.forEach(t=>{const i=D.d.findIndex(v=>v>=t)-i0;if(i>0&&i<n)g+=`<line x1="${x(i)}" x2="${x(i)}" y1="${T}" y2="${H-B}" stroke="${css(m.c)}" stroke-dasharray="${m.dash}" opacity="${m.op}"/>`;}));
+  let y2=null;
+  if(o.bg){/* 背景價格層：獨立的對數刻度，佔滿圖高，刻度標在右側 */
+    const pv=o.bg.a.slice(i0).filter(z=>z!=null&&z>0).map(Math.log10),plo=Math.min(...pv),phi=Math.max(...pv),pad=(phi-plo)*.04;
+    const a=plo-pad,b=phi+pad;y2=v=>T+(H-T-B)*(1-(Math.log10(v)-a)/(b-a));
+    const st10=(b-a)>3?1:(b-a)>1.2?0.5:0.25,pc=css('--price');
+    for(let e=Math.ceil(a/st10)*st10;e<=b;e+=st10){const v=10**e,lab=v>=1e3?Math.round(v/1e3)+'k':Math.round(v);g+=`<text x="${W-R+6}" y="${y2(v)+4}" font-size="10.5" fill="${pc}" opacity=".85">${lab}</text>`;}
+    let d='',first=-1;o.bg.a.slice(i0).forEach((v,i)=>{if(v==null||v<=0)return;if(first<0)first=i;d+=(d?'L':'M')+x(i).toFixed(1)+','+y2(v).toFixed(1);});
+    if(d){g+=`<path d="${d}L${x(n-1)},${H-B}L${x(first)},${H-B}Z" fill="${pc}" opacity=".10"/><path d="${d}" fill="none" stroke="${pc}" stroke-width="1.4" opacity=".55" stroke-linejoin="round"/>`;}}
   if(o.axis){const y0=+D.d[i0].slice(0,4),y1=+D.d[D.d.length-1].slice(0,4),s=Math.max(1,Math.ceil((y1-y0)/6));
     for(let yr=y0+1;yr<=y1;yr+=s){const i=D.d.findIndex(v=>v>=yr+'-01-01')-i0;if(i>0)g+=`<text x="${x(i)}" y="${H-6}" font-size="11" text-anchor="middle" fill="${mut}">${yr}</text>`;}}
   series.forEach(s=>{if(s.hide)return;let d='',pen=false;s.a.slice(i0).forEach((v,i)=>{if(v==null||(o.log&&v<=0)){pen=false;return;}d+=(pen?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1);pen=true;});
     if(s.fill&&d){const first=s.a.slice(i0).findIndex(v=>v!=null);g+=`<path d="${d}L${x(n-1)},${H-B}L${x(first)},${H-B}Z" fill="${css(s.c)}" opacity=".08"/>`;}
-    g+=`<path d="${d}" fill="none" stroke="${css(s.c)}" stroke-width="${s.w||2}" stroke-linejoin="round" stroke-linecap="round"/>`;});
+    g+=`<path d="${d}" fill="none" stroke="${css(s.c)}" stroke-width="${s.w||2}" stroke-linejoin="round" stroke-linecap="round"${s.dash?` stroke-dasharray="${s.dash}"`:''}/>`;});
   const h=o.hover;if(h!=null&&h<n){g+=`<line x1="${x(h)}" x2="${x(h)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" opacity=".3"/>`;
+    if(y2&&o.bg.a[i0+h]>0)g+=`<circle cx="${x(h)}" cy="${y2(o.bg.a[i0+h])}" r="3.5" fill="${css('--price')}" stroke="${css('--surface')}" stroke-width="2"/>`;
     series.forEach(s=>{const v=s.a[i0+h];if(!s.hide&&v!=null&&(!o.log||v>0))g+=`<circle cx="${x(h)}" cy="${y(v)}" r="4.5" fill="${css(s.c)}" stroke="${css('--surface')}" stroke-width="2"/>`;});}
   el.innerHTML=g;
 }
-function bind(els,g,i0fn,draw){const L=44,R=10;const mv=ev=>{const el=ev.currentTarget,r=el.getBoundingClientRect(),cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left,n=D.d.length-i0fn();
-  st[g].hover=Math.max(0,Math.min(n-1,Math.round((cx-L)/(el.clientWidth-L-R)*(n-1))));draw();};
+function nearest(i0,t){let a=i0,b=TS.length-1;while(b-a>1){const m=(a+b)>>1;TS[m]<t?a=m:b=m;}return (t-TS[a]<=TS[b]-t?a:b)-i0;}
+function bind(els,g,i0fn,draw){const mv=ev=>{const el=ev.currentTarget,L=+(el.dataset.l||44),R=+(el.dataset.r||10),r=el.getBoundingClientRect(),cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left,i0=i0fn();
+  const f=Math.max(0,Math.min(1,(cx-L)/(el.clientWidth-L-R)));st[g].hover=nearest(i0,TS[i0]+f*(TS[TS.length-1]-TS[i0]));draw();};
   els.forEach(e=>{if(!e)return;e.onmousemove=mv;e.ontouchmove=mv;e.ontouchstart=mv;e.onmouseleave=()=>{st[g].hover=null;draw();};});}
 const f0=v=>v==null?'—':Math.round(v);
 function mainMarks(){return st.mode==='bottom'?[{d:BOTTOMS,c:'--botline',dash:'3 3',op:.75},{d:[CUR_LOW],c:'--botline',dash:'1 4',op:.55}]:[{d:TOPS,c:'--topline',dash:'3 3',op:.6}];}
 function drawMain(){const s=st.main,i0=i0of(s.years),mk=mainMarks();
-  chart($('#c-price'),i0,[{a:D.p,c:'--price',w:1.6}],{log:true,hover:s.hover,marks:mk});
-  chart($('#c-main'),i0,[{a:D.tim,c:'--s-tim',w:1.6,hide:s.hide.has('tim')},{a:D.heat,c:'--s-heat',w:1.7,hide:s.hide.has('heat')},{a:D.cold,c:'--s-cold',w:1.6,hide:s.hide.has('cold')},{a:D.bsig,c:'--s-bot',w:2.2,fill:true,hide:s.hide.has('bsig')},{a:D.sig,c:'--s-sig',w:2.4,fill:true,hide:s.hide.has('sig')}],{min:0,max:100,ticks:[0,25,50,75,100],thresholds:[WIN,ALERT],axis:true,hover:s.hover,marks:mk});
+  chart($('#c-main'),i0,[{a:D.tim,c:'--s-tim',w:1.6,dash:'5 4',hide:s.hide.has('tim')},{a:D.heat,c:'--s-heat',w:1.7,hide:s.hide.has('heat')},{a:D.cold,c:'--s-cold',w:1.6,hide:s.hide.has('cold')},{a:D.bsig,c:'--s-bot',w:2.2,fill:true,hide:s.hide.has('bsig')},{a:D.sig,c:'--s-sig',w:2.4,fill:true,hide:s.hide.has('sig')}],{min:0,max:100,ticks:[0,25,50,75,100],thresholds:[WIN,ALERT],axis:true,hover:s.hover,marks:mk,bg:{a:D.p}});
   const j=i0+(s.hover==null?D.d.length-1-i0:s.hover);
   $('#tip-main').innerHTML=`<b>${D.d[j]}</b><span>$${Math.round(D.p[j]).toLocaleString()}</span><span>訊號 <b>${f0(D.sig[j])}</b></span><span>熱度 <b>${f0(D.heat[j])}</b></span><span>時機 <b>${f0(D.tim[j])}</b></span><span>底部 <b>${f0(D.bsig[j])}</b></span><span>冷度 <b>${f0(D.cold[j])}</b></span>`;}
 function drawInd(){const s=st.ind,k=s.k;if(!k)return;const i0=i0of(s.years),v=D['v_'+k],sc=D['s_'+k],m=IND[k];
@@ -974,7 +985,7 @@ function route(){const {mode,v,sub}=parseHash();st.mode=mode;
   if(sub){const el=document.getElementById((mode==='bottom'?'grp-':'cat-')+sub);if(el){el.open=true;setTimeout(()=>{const y=el.getBoundingClientRect().top+scrollY-130;scrollTo({top:y,behavior:'smooth'});},30);}}else scrollTo(0,0);
   redraw();}
 function redraw(){const {v}=parseHash();if(v==='overview')drawMain();if(st.ind.k)drawInd();}
-bind([$('#c-price'),$('#c-main')],'main',()=>i0of(st.main.years),drawMain);bindSeg();
+bind([$('#c-main')],'main',()=>i0of(st.main.years),drawMain);bindSeg();
 addEventListener('hashchange',route);addEventListener('resize',redraw);matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redraw);
 route();
 </script>

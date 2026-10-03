@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 import requests
 
-UA = {"User-Agent": "Mozilla/5.0 (btc-top-dashboard; public data only)"}
+UA = {"User-Agent": "Mozilla/5.0 (tidemark; public data only)"}
 TIMEOUT = 30
 
 
