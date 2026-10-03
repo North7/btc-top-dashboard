@@ -1,0 +1,328 @@
+{
+  "date": "2026-10-03",
+  "generated_at": "2026-10-03T15:51:47Z",
+  "price_usd": 84517.52,
+  "price_date": "2026-10-02",
+  "composite_score": 41.2,
+  "hot_categories": 0,
+  "zone": "warm",
+  "stale": false,
+  "categories": {
+    "onchain_valuation": {
+      "label": "鏈上估值",
+      "weight": 0.35,
+      "score": 66.9,
+      "status": "ok",
+      "stale": false,
+      "indicators": {
+        "mvrv_z": {
+          "label": "MVRV Z-score",
+          "unit": "",
+          "value": 1.0068,
+          "score": 63.9,
+          "as_of": "2026-10-02",
+          "stale": false,
+          "status": "ok",
+          "method": "cycle",
+          "bottom_bound": -0.2448,
+          "expected_top": 1.7134,
+          "past_tops": {
+            "2013-12-04": 7.704061973442023,
+            "2017-12-16": 9.354234932070232,
+            "2021-11-08": 3.5338955722930834,
+            "2025-10-06": 2.529864787642148
+          }
+        },
+        "nupl": {
+          "label": "NUPL",
+          "unit": "",
+          "value": 0.365,
+          "score": 74.8,
+          "as_of": "2026-10-02",
+          "stale": false,
+          "status": "ok",
+          "method": "cycle",
+          "bottom_bound": -0.0683,
+          "expected_top": 0.511,
+          "past_tops": {
+            "2013-12-04": 0.788053831393491,
+            "2017-12-16": 0.7743054077961272,
+            "2021-11-08": 0.6496943049336483,
+            "2025-10-06": 0.5627737579572342
+          }
+        },
+        "puell": {
+          "label": "Puell Multiple",
+          "unit": "",
+          "value": 1.0466,
+          "score": 52.0,
+          "as_of": "2026-10-02",
+          "stale": false,
+          "status": "ok",
+          "method": "percentile",
+          "history_days": 5622
+        },
+        "rp_multiple": {
+          "label": "實現價格倍數",
+          "unit": "x",
+          "value": 1.5747,
+          "score": 77.0,
+          "as_of": "2026-10-02",
+          "stale": false,
+          "status": "ok",
+          "method": "cycle",
+          "bottom_bound": 0.8889,
+          "expected_top": 1.779,
+          "past_tops": {
+            "2013-12-04": 4.718179179999999,
+            "2017-12-16": 4.43076633,
+            "2021-11-08": 2.854649564891,
+            "2025-10-06": 2.2871454268799094
+          }
+        }
+      },
+      "effective_weight": 0.35
+    },
+    "holder_behavior": {
+      "label": "持有者行為",
+      "weight": 0.2,
+      "score": 4.4,
+      "status": "partial",
+      "stale": false,
+      "indicators": {
+        "exchange_netflow_30d_pct": {
+          "label": "交易所 30 日淨流入",
+          "unit": "% 流通量",
+          "value": -0.4622,
+          "score": 4.4,
+          "as_of": "2026-10-02",
+          "stale": false,
+          "status": "ok",
+          "method": "percentile",
+          "history_days": 5617
+        },
+        "lth_supply_change": {
+          "label": "長期持有者供給變化",
+          "status": "unavailable",
+          "reason": "長期持有者供給變化（需 Glassnode / CryptoQuant）"
+        },
+        "lth_sopr": {
+          "label": "LTH-SOPR",
+          "status": "unavailable",
+          "reason": "LTH-SOPR（需 Glassnode / CryptoQuant）"
+        },
+        "cdd_dormancy": {
+          "label": "CDD / Dormancy",
+          "status": "unavailable",
+          "reason": "CDD / Dormancy（需 Glassnode / CryptoQuant）"
+        }
+      },
+      "effective_weight": 0.2
+    },
+    "capital_flows": {
+      "label": "資金流與機構",
+      "weight": 0.2,
+      "score": 38.5,
+      "status": "ok",
+      "stale": false,
+      "indicators": {
+        "etf_flow_30d": {
+          "label": "ETF 30 日累計淨流入",
+          "unit": "百萬美元",
+          "value": 2186.7,
+          "score": 56.2,
+          "as_of": "2026-10-03",
+          "stale": false,
+          "status": "ok",
+          "method": "percentile",
+          "history_days": 968
+        },
+        "etf_flow_momentum": {
+          "label": "ETF 流入動能",
+          "unit": "百萬美元",
+          "value": -1566.2,
+          "score": 32.0,
+          "as_of": "2026-10-03",
+          "stale": false,
+          "status": "ok",
+          "method": "percentile",
+          "history_days": 938
+        },
+        "stable_growth_90d": {
+          "label": "穩定幣 90 日增速",
+          "unit": "%",
+          "value": 1.1046,
+          "score": 38.8,
+          "as_of": "2026-10-03",
+          "stale": false,
+          "status": "ok",
+          "method": "percentile",
+          "history_days": 3141
+        },
+        "coinbase_premium_7d": {
+          "label": "Coinbase 溢價（7 日均）",
+          "unit": "%",
+          "value": -0.033,
+          "score": 27.1,
+          "as_of": "2026-10-03",
+          "stale": false,
+          "status": "ok",
+          "method": "percentile",
+          "history_days": 1497
+        }
+      },
+      "effective_weight": 0.2
+    },
+    "leverage": {
+      "label": "槓桿與衍生品",
+      "weight": 0.15,
+      "score": 29.5,
+      "status": "ok",
+      "stale": false,
+      "indicators": {
+        "funding_7d_ann": {
+          "label": "資金費率 7 日均（年化）",
+          "unit": "%",
+          "value": 4.1733,
+          "score": 32.2,
+          "as_of": "2026-10-03",
+          "stale": false,
+          "status": "ok",
+          "method": "percentile",
+          "history_days": 2577
+        },
+        "oi_to_mcap": {
+          "label": "未平倉量 / 市值",
+          "unit": "%",
+          "value": 0.1854,
+          "score": 10.1,
+          "as_of": "2026-10-01",
+          "stale": false,
+          "status": "ok",
+          "method": "percentile",
+          "history_days": 179
+        },
+        "basis_ann": {
+          "label": "期現基差（年化）",
+          "unit": "%",
+          "value": 5.0559,
+          "score": 46.2,
+          "as_of": "2026-10-03",
+          "stale": false,
+          "status": "ok",
+          "method": "percentile",
+          "history_days": 2069
+        }
+      },
+      "effective_weight": 0.15
+    },
+    "sentiment_cycle": {
+      "label": "情緒與週期",
+      "weight": 0.1,
+      "score": 48.0,
+      "status": "partial",
+      "stale": false,
+      "indicators": {
+        "fear_greed_7d": {
+          "label": "恐懼貪婪指數（7 日均）",
+          "unit": "",
+          "value": 71.5714,
+          "score": 84.4,
+          "as_of": "2026-10-03",
+          "stale": false,
+          "status": "ok",
+          "method": "percentile",
+          "history_days": 3158
+        },
+        "days_since_halving": {
+          "label": "距最近一次減半",
+          "unit": "天",
+          "value": 896.0,
+          "score": 11.7,
+          "as_of": "2026-10-03",
+          "stale": false,
+          "status": "ok",
+          "method": "halving",
+          "expected_top_days": 621
+        },
+        "google_trends": {
+          "label": "Google Trends「bitcoin」",
+          "status": "unavailable",
+          "reason": "Google Trends「bitcoin」（無官方免費 API，第一版跳過）"
+        }
+      },
+      "effective_weight": 0.1
+    }
+  },
+  "cycle_tops": [
+    "2013-12-04",
+    "2017-12-16",
+    "2021-11-08",
+    "2025-10-06"
+  ],
+  "cycle_bottoms": [
+    "2015-01-14",
+    "2018-12-15",
+    "2022-11-09"
+  ],
+  "sources": {
+    "coinmetrics": {
+      "fetched": true,
+      "last_date": "2026-10-02",
+      "stale": false,
+      "available": true,
+      "errors": []
+    },
+    "stablecoins": {
+      "fetched": true,
+      "last_date": "2026-10-03",
+      "stale": false,
+      "available": true,
+      "errors": []
+    },
+    "fear_greed": {
+      "fetched": true,
+      "last_date": "2026-10-03",
+      "stale": false,
+      "available": true,
+      "errors": []
+    },
+    "funding": {
+      "fetched": true,
+      "last_date": "2026-10-03",
+      "stale": false,
+      "available": true,
+      "errors": []
+    },
+    "open_interest": {
+      "fetched": true,
+      "last_date": "2026-10-01",
+      "stale": false,
+      "available": true,
+      "errors": []
+    },
+    "basis": {
+      "fetched": true,
+      "last_date": "2026-10-03",
+      "stale": false,
+      "available": true,
+      "errors": []
+    },
+    "coinbase_premium": {
+      "fetched": true,
+      "last_date": "2026-10-03",
+      "stale": false,
+      "available": true,
+      "errors": []
+    },
+    "etf": {
+      "fetched": true,
+      "last_date": "2026-10-02",
+      "stale": false,
+      "available": true,
+      "errors": []
+    }
+  },
+  "zone_rules": "cold < 40 ≤ warm < 65 ≤ hot；top_zone = 總分 ≥ 80 且熱類別（≥80）≥ 3",
+  "disclaimer": "僅供參考，不構成投資建議。"
+}

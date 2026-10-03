@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+# 本機私人檔案（v3 規則參數等）一律不進公開倉庫
+private/
+*.local.*
+.env
