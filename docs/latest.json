@@ -1,12 +1,12 @@
 {
-  "date": "2026-10-03",
-  "generated_at": "2026-10-03T18:00:30Z",
-  "price_usd": 84517.52,
-  "price_date": "2026-10-02",
+  "date": "2026-10-04",
+  "generated_at": "2026-10-04T02:21:49Z",
+  "price_usd": 84756.14,
+  "price_date": "2026-10-03",
   "top_signal": 0.0,
   "signal_level": "none",
-  "heat_score": 39.4,
-  "composite_score": 39.4,
+  "heat_score": 38.6,
+  "composite_score": 38.6,
   "timing_score": 0.0,
   "hot_categories": 0,
   "zone": "cold",
@@ -15,8 +15,8 @@
     "score": 0.0,
     "score_halving": 0.0,
     "score_low": 0.0,
-    "days_since_halving": 896,
-    "days_since_low": 95,
+    "days_since_halving": 897,
+    "days_since_low": 96,
     "last_halving": "2024-04-20",
     "next_halving": "2028-04-15",
     "next_halving_estimated": true,
@@ -54,14 +54,14 @@
       "2025-10-06": 1062
     }
   },
-  "bottom_signal": 21.7,
+  "bottom_signal": 21.1,
   "bottom_level": "none",
-  "cold_score": 20.3,
+  "cold_score": 20.2,
   "bottom_timing_score": 100.0,
   "bottom": {
-    "signal": 21.7,
+    "signal": 21.1,
     "level": "none",
-    "cold_score": 20.3,
+    "cold_score": 20.2,
     "groups": {
       "估值": {
         "score": 0.0,
@@ -72,7 +72,7 @@
         "weight": 0.3
       },
       "價格結構": {
-        "score": 69.4,
+        "score": 69.1,
         "weight": 0.2
       }
     },
@@ -140,8 +140,8 @@
         "group": "價格結構",
         "unit": "",
         "description": "價格相對 200 日幾何平均與長期指數成長曲線的位置。過去三次底部為 0.23、0.27、0.26；慣用 1.2 為定投線（中性）。",
-        "value": 0.5659,
-        "score": 69.4,
+        "value": 0.5682,
+        "score": 69.1,
         "method": "cycle_bottom",
         "expected_bottom": 0.286,
         "neutral": 1.2,
@@ -156,8 +156,8 @@
       "score": 100.0,
       "score_top": 100.0,
       "score_halving": 100.0,
-      "days_since_top": 362,
-      "days_since_halving": 896,
+      "days_since_top": 363,
+      "days_since_halving": 897,
       "last_top": "2025-10-06",
       "last_halving": "2024-04-20",
       "window_by_top": {
@@ -359,7 +359,7 @@
     "capital_flows": {
       "label": "資金流與機構",
       "weight": 0.2,
-      "score": 9.6,
+      "score": 8.2,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -368,56 +368,56 @@
           "unit": "百萬美元",
           "role": "score",
           "description": "美國現貨 ETF 過去 30 日的淨申購合計。",
-          "value": 2186.8136,
-          "score": 32.6,
-          "percentile": 56.2,
-          "as_of": "2026-10-03",
+          "value": 2012.2182,
+          "score": 28.7,
+          "percentile": 53.7,
+          "as_of": "2026-10-04",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 968
+          "history_days": 969
         },
         "etf_flow_momentum": {
           "label": "ETF 流入動能",
           "unit": "百萬美元",
           "role": "score",
           "description": "最近 30 日淨流入減前 30 日，正值代表流入在加速。",
-          "value": -1549.9531,
+          "value": -1654.7245,
           "score": 0.0,
-          "percentile": 32.2,
-          "as_of": "2026-10-03",
+          "percentile": 31.5,
+          "as_of": "2026-10-04",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 938
+          "history_days": 939
         },
         "stable_growth_90d": {
           "label": "穩定幣 90 日增速",
           "unit": "%",
           "role": "score",
           "description": "穩定幣總供給 90 日成長率，代表場內可用的新資金。",
-          "value": 1.1043,
-          "score": 5.9,
-          "percentile": 38.8,
-          "as_of": "2026-10-03",
+          "value": 0.8039,
+          "score": 3.9,
+          "percentile": 37.5,
+          "as_of": "2026-10-04",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 3141
+          "history_days": 3142
         },
         "coinbase_premium_7d": {
           "label": "Coinbase 溢價（7 日均）",
           "unit": "%",
           "role": "score",
           "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
-          "value": -0.0316,
+          "value": -0.0335,
           "score": 0.0,
-          "percentile": 27.7,
-          "as_of": "2026-10-03",
+          "percentile": 26.9,
+          "as_of": "2026-10-04",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 1497
+          "history_days": 1498
         }
       },
       "effective_weight": 0.25
@@ -425,7 +425,7 @@
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 5.5,
+      "score": 5.0,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -434,14 +434,14 @@
           "unit": "%",
           "role": "score",
           "description": "永續合約多方付給空方的費率。越高代表槓桿做多越擁擠。",
-          "value": 3.9316,
+          "value": 3.9173,
           "score": 0.0,
-          "percentile": 30.2,
-          "as_of": "2026-10-03",
+          "percentile": 29.9,
+          "as_of": "2026-10-04",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 2577
+          "history_days": 2578
         },
         "oi_to_mcap": {
           "label": "未平倉量 / 市值",
@@ -462,14 +462,14 @@
           "unit": "%",
           "role": "score",
           "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
-          "value": 5.0323,
-          "score": 16.4,
-          "percentile": 45.7,
-          "as_of": "2026-10-03",
+          "value": 4.9713,
+          "score": 14.9,
+          "percentile": 44.7,
+          "as_of": "2026-10-04",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 2069
+          "history_days": 2070
         }
       },
       "effective_weight": 0.187
@@ -477,7 +477,7 @@
     "sentiment_cycle": {
       "label": "情緒",
       "weight": 0.1,
-      "score": 76.0,
+      "score": 73.3,
       "status": "partial",
       "stale": false,
       "indicators": {
@@ -486,14 +486,14 @@
           "unit": "",
           "role": "score",
           "description": "alternative.me 綜合波動、成交量、社群與搜尋的情緒指數（0–100）。",
-          "value": 71.5714,
-          "score": 76.0,
-          "percentile": 84.4,
-          "as_of": "2026-10-03",
+          "value": 70.8571,
+          "score": 73.3,
+          "percentile": 82.6,
+          "as_of": "2026-10-04",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 3158
+          "history_days": 3159
         },
         "google_trends": {
           "label": "Google Trends「bitcoin」",
@@ -519,28 +519,28 @@
   "sources": {
     "coinmetrics": {
       "fetched": true,
-      "last_date": "2026-10-02",
+      "last_date": "2026-10-03",
       "stale": false,
       "available": true,
       "errors": []
     },
     "stablecoins": {
       "fetched": true,
-      "last_date": "2026-10-03",
+      "last_date": "2026-10-04",
       "stale": false,
       "available": true,
       "errors": []
     },
     "fear_greed": {
       "fetched": true,
-      "last_date": "2026-10-03",
+      "last_date": "2026-10-04",
       "stale": false,
       "available": true,
       "errors": []
     },
     "funding": {
       "fetched": true,
-      "last_date": "2026-10-03",
+      "last_date": "2026-10-04",
       "stale": false,
       "available": true,
       "errors": []
@@ -554,14 +554,14 @@
     },
     "basis": {
       "fetched": true,
-      "last_date": "2026-10-03",
+      "last_date": "2026-10-04",
       "stale": false,
       "available": true,
       "errors": []
     },
     "coinbase_premium": {
       "fetched": true,
-      "last_date": "2026-10-03",
+      "last_date": "2026-10-04",
       "stale": false,
       "available": true,
       "errors": []

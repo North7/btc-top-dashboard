@@ -8,6 +8,7 @@
 
 - 儀表板：`https://north7.github.io/tidemark/`
 - 當日數據：`https://north7.github.io/tidemark/latest.json`
+- 英文版：`https://north7.github.io/tidemark/en/`（首次依瀏覽器語言自動選擇，右上角可切換）
 
 ## 三個數字
 
