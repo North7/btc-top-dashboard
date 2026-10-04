@@ -602,12 +602,13 @@ TEMPLATE = r"""<!doctype html>
 <title>__TITLE__</title>
 <link rel="icon" href="__FAVICON__">
 <meta name="description" content="⟪每日更新的比特幣週期訊號：頂部訊號（熱度 × 時機）與底部訊號（冷度 × 底部時機）。|Daily bitcoin cycle signals: a top signal (heat × timing) and a bottom signal (coldness × bottom timing).⟫">
-<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}
+<script>/* 預設深色；使用者選過（dark／light／auto）就沿用 */
+var THEME0='dark';try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark'||t==='auto')THEME0=t;}catch(e){}
+if(THEME0!=='auto')document.documentElement.dataset.theme=THEME0;
 try{var L=localStorage.getItem('lang'),here='⟪zh|en⟫';
   if(!L){L=/^zh/i.test(navigator.language||'')?'zh':'en';}
   if(L!==here&&!/[?&]nolang/.test(location.search))location.replace((here==='zh'?'en/':'../')+(location.protocol==='file:'?'index.html':'')+location.hash);}catch(e){}</script>
-<meta name="theme-color" content="#0b0d10" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#f3f4f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0d10" id="theme-color">
 <style>
 :root{color-scheme:light;--bg:#f3f4f6;--surface:#fff;--surface2:#f7f8fa;--line:rgba(15,23,42,.08);--line2:rgba(15,23,42,.14);
 --fg:#0f172a;--mut:#5b6474;--faint:#8b93a1;--top-c:#d93f4c;--top-c2:#a8263a;--bot-c:#1f9a78;--bot-c2:#137057;--accent:var(--top-c);--accent-soft:color-mix(in srgb,var(--accent) 12%,transparent);
@@ -875,7 +876,7 @@ padding:10px 18px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -10px 40
   <a class="brand" href="#overview" aria-label="__BRAND__ ⟪首頁|home⟫">__LOGO__<div class="brand-txt"><h1><span class="wordmark">__BRAND__</span>__BADGE__</h1><div class="sub">__BRAND_ZH__ · $__PRICE__ · __PRICE_DATE__</div></div></a>
   <nav class="tabs tabs-top" aria-label="⟪分頁|Tabs⟫">__TABS__</nav>
   <a class="iconbtn lang" id="lang" href="__LANG_HREF__" title="__LANG_TITLE__" aria-label="__LANG_TITLE__">__LANG_LABEL__</a>
-  <button class="iconbtn" id="theme" aria-label="⟪切換深淺色|Toggle theme⟫" title="⟪深淺色：自動|Theme: auto⟫"></button>
+  <button class="iconbtn" id="theme" aria-label="⟪切換深淺色|Toggle theme⟫" title="⟪深淺色：深色|Theme: dark⟫"></button>
   <button class="iconbtn" id="help" aria-label="⟪怎麼看這個頁面|How to read this page⟫">?</button>
 </div></header>
 
@@ -1074,10 +1075,12 @@ const THEME_ICON={auto:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/>
   dark:'<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>'};
 const THEME_TEXT={auto:'⟪自動（跟隨系統）|Auto (system)⟫',light:'⟪淺色|Light⟫',dark:'⟪深色|Dark⟫'};
 function setTheme(t,save){if(t==='auto')delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=t;
+  const dark=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);$('#theme-color').setAttribute('content',dark?'#0b0d10':'#f3f4f6');
   $('#theme').innerHTML=THEME_ICON[t];$('#theme').title='⟪深淺色：|Theme: ⟫'+THEME_TEXT[t];$('#theme').setAttribute('aria-label','⟪深淺色：|Theme: ⟫'+THEME_TEXT[t]+'⟪（點擊切換）| (tap to change)⟫');
-  if(save){try{t==='auto'?localStorage.removeItem('theme'):localStorage.setItem('theme',t);}catch(e){}}requestAnimationFrame(redraw);}
-setTheme(document.documentElement.dataset.theme||'auto',false);
-$('#theme').onclick=()=>{const order=['auto','light','dark'],cur=document.documentElement.dataset.theme||'auto';setTheme(order[(order.indexOf(cur)+1)%3],true);};
+  if(save){try{localStorage.setItem('theme',t);}catch(e){}}requestAnimationFrame(redraw);}
+setTheme(THEME0,false);
+$('#theme').onclick=()=>{const order=['dark','light','auto'],cur=document.documentElement.dataset.theme||'auto';setTheme(order[(order.indexOf(cur)+1)%3],true);};
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(!document.documentElement.dataset.theme)setTheme('auto',false);});
 function openInd(k){const m=IND[k];st.ind={years:0,hover:null,k};
   openSheet(`<div class="sh-cat">${m.cat}</div><div class="sh-title" id="sheet-title">${m.label}</div>
   <div class="sh-kpis"><div><span>⟪目前數值|Current value⟫ (${m.asOf})</span><b>${m.value}</b></div><div><span>⟪分數|Score⟫</span><b class="${m.band}">${m.score==null?'—':m.score}</b></div></div>
