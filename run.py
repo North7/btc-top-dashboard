@@ -342,6 +342,8 @@ def main():
     render_page(latest, hist, ind, DOCS / "index.html", defs, PRIVATE, lang="zh")
     render_page(latest, hist, ind, DOCS / "en" / "index.html", defs, PRIVATE, lang="en")
     (DOCS / ".nojekyll").touch()
+    if PRIVATE:  # 私人版頁面也需要字體檔
+        shutil.copytree(ROOT / "docs" / "fonts", DOCS / "fonts", dirs_exist_ok=True)
     print(f"底部訊號 {latest['bottom_signal']}（{latest['bottom_level']}） 冷度 {latest['cold_score']} "
           f"底部時機 {latest['bottom_timing_score']}　{bottom['cycle_test']['verdict']}")
     print(f"完成：{latest['date']} 頂部訊號 {latest['top_signal']}（{latest['signal_level']}） "

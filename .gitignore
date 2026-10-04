@@ -6,3 +6,4 @@ __pycache__/
 private/
 *.local.*
 .env
+design-previews/
