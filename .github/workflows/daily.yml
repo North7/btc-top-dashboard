@@ -1,11 +1,13 @@
 name: daily-update
 
 on:
-  schedule:
-    - cron: "15 0 * * *"  # 每天 UTC 00:15（每日報告 00:40 之前）
-    - cron: "30 0 * * *"  # 備援：GitHub 偶爾漏跑或延遲排程；今天已更新就略過
-    - cron: "15 3 * * *"  # 備援
+  # 主要觸發：外部定時服務（cron-job.org）每天 UTC 00:15 呼叫 workflow_dispatch（GitHub 排程實測常延遲約 5 小時）
   workflow_dispatch:
+  # 備援：GitHub 自身排程；當天已更新就略過
+  schedule:
+    - cron: "15 0 * * *"
+    - cron: "30 0 * * *"
+    - cron: "15 3 * * *"
 
 permissions:
   contents: write
@@ -23,10 +25,10 @@ jobs:
         with:
           fetch-depth: 30
 
-      - name: 檢查今天是否已更新（只有備援排程會略過）
+      - name: 檢查今天是否已更新（排程觸發才會略過；手動或外部觸發一律執行）
         id: chk
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" != "15 0 * * *" ] \
+          if [ "${{ github.event_name }}" = "schedule" ] \
              && git log -30 --format=%s | grep -qx "data: daily update $(date -u +%Y-%m-%d)"; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "今天已更新，備援排程略過"

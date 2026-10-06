@@ -26,7 +26,9 @@
 ## 技術架構
 - Python 3.11+，套件：pandas、requests、numpy（必要時再加）
 - 每日由 GitHub Actions 排程執行（UTC 00:15，在每日報告 00:40 之前完成）
-  備援排程 UTC 00:30、03:15：當天已有「data: daily update 日期」commit 就略過（GitHub 偶爾漏跑排程）
+  主要觸發：外部 cron-job.org 每天 UTC 00:15 呼叫 workflow_dispatch（GitHub 排程實測延遲約 5 小時）。
+  權杖為 fine-grained PAT（只限本倉庫、Actions 讀寫），只存在 cron-job.org，不寫入倉庫。
+  備援：GitHub 排程 00:15、00:30、03:15，當天已有「data: daily update 日期」commit 就略過
 - 執行後自動 commit 更新的 `data/` 與 `docs/`
 - GitHub Pages 從 `docs/` 發布
 
