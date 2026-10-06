@@ -8,7 +8,7 @@ CRON_TOKEN_EXPIRES = "2027-10-06"
 
 LEVEL_ZH = {"none": "未觸發", "window": "頂部窗口", "alert": "高度警戒", "zone": "底部區", "strong": "強烈底部"}
 WHY_ZH = {"st_down": "週線 Supertrend 轉空", "st_up": "週線 Supertrend 轉多", "bsig": "底部訊號 ≥ 50"}
-STATUS_ZH = {"testing": "驗證中", "supported": "支持「本輪低點即週期底部」", "classic": "傳統型底部（曾出現估值投降）"}
+STATUS_ZH = {"failed": "假說不成立（候選低點已被跌破）", "testing": "驗證中", "supported": "支持「本輪低點即週期底部」", "classic": "傳統型底部（曾出現估值投降）"}
 
 
 def _get(d, *path):

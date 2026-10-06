@@ -308,7 +308,7 @@ flowchart LR
 <section id="strategy">
   <header><div class="lbl">Strategy</div><h2>週期策略：警戒 + 趨勢確認</h2></header>
   <div class="cols">
-    <div class="box"><span class="lbl" style="color:var(--strat)">警戒</span><p>持有中，頂部訊號或頂部時機 ≥ 50，進入警戒並保持到賣出。</p></div>
+    <div class="box"><span class="lbl" style="color:var(--strat)">警戒</span><p>持有中，頂部訊號或頂部時機 ≥ 50，進入警戒並保持到賣出（實際上等於頂部時機 ≥ 50）。</p></div>
     <div class="box"><span class="lbl" style="color:var(--top)">賣出</span><p>警戒中，週線 Supertrend（ATR 10 × 3）由多轉空，全部賣出。</p></div>
     <div class="box"><span class="lbl" style="color:var(--bot)">買回</span><p>空手時，底部訊號 ≥ 50 或週線 Supertrend 轉多，全部買回。</p></div>
   </div>
@@ -316,14 +316,16 @@ flowchart LR
     <thead><tr><th>起點</th><th>策略</th><th>持有</th><th>策略 ÷ 持有</th><th>策略最大回撤</th><th>持有最大回撤</th></tr></thead>
     <tbody>
       <tr><td class="n">2014</td><td class="n">857×</td><td class="n">114×</td><td class="n">7.5×</td><td class="n">−74%</td><td class="n">−84%</td></tr>
-      <tr><td class="n">2018</td><td class="n">20.8×</td><td class="n">6.4×</td><td class="n">3.3×</td><td class="n">−71%</td><td class="n">−81%</td></tr>
-      <tr><td class="n">2022</td><td class="n">5.5×</td><td class="n">1.8×</td><td class="n">3.1×</td><td class="n">−35%</td><td class="n">−67%</td></tr>
+      <tr><td class="n">2018</td><td class="n">13.1×</td><td class="n">6.4×</td><td class="n">2.1×</td><td class="n">−81%</td><td class="n">−81%</td></tr>
+      <tr><td class="n">2022</td><td class="n">2.7×</td><td class="n">1.8×</td><td class="n">1.5×</td><td class="n">−67%</td><td class="n">−67%</td></tr>
     </tbody></table></div>
   <div class="prose"><h3>讓產品接受未來的檢驗</h3></div>
   <ol class="num">
-    <li><b>逐輪回測</b>：每一輪只用當時已知的資料設定參數，不偷看未來。</li>
-    <li><b>敏感度測試</b>：門檻在 40–60 之間的 27 種組合全部勝過持有，證明不是剛好挑中的參數。</li>
-    <li><b>設定定案日（2026-10-06）</b>：規則從此凍結，之後的績效分開顯示；保守、中間、樂觀三種未來情境也同時凍結，用真實數據逐日比對。</li>
+    <li><b>逐輪回測</b>：每一輪只用當時已知的頂部與底部設定參數；每個起點都從「滿倉、未警戒」重新開始。</li>
+    <li><b>敏感度測試</b>：門檻在 40–60 之間的 27 種組合全部勝過持有，但只產生 3 條不同的持倉路徑，所以只當作「參數不脆弱」的旁證。</li>
+    <li><b>設定定案日（2026-10-06）</b>：規則從此凍結，之後的績效分開顯示；保守、中間、樂觀三種未來情境也同時凍結，用真實數據逐日比對；每天的決策寫入只新增、不改寫的紀錄。</li>
+    <li><b>請外部 AI 交叉審查</b>：把演算法規格交給其他 AI 獨立重算，接受了 6 項發現並修正——底部驗證改為凍結假說、可判定失敗；各起點回測改為重新開始；
+      如實揭露「熱度不影響交易」、頂部日期事後指定等限制。數字因此變差，但可信度提高。</li>
   </ol>
 </section>
 

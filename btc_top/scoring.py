@@ -136,13 +136,13 @@ def build_indicators(raw: dict[str, pd.DataFrame]) -> pd.DataFrame:
 
     # 三、資金流
     if len(raw.get("etf", [])):
-        etf = raw["etf"]["etf_flow_musd"].reindex(idx).fillna(0)
-        etf[idx < raw["etf"].index.min()] = np.nan
+        etf = raw["etf"]["etf_flow_musd"].reindex(idx).fillna(0)  # 範圍內的非交易日 = 0
+        etf[(idx < raw["etf"].index.min()) | (idx > raw["etf"].index.max())] = np.nan  # 最後一筆之後是「沒資料」，不是零流入
         s30 = etf.rolling(30).sum()
         ind["etf_flow_30d"] = s30
         ind["etf_flow_momentum"] = s30 - s30.shift(30)
     if len(raw.get("stablecoins", [])):
-        st = raw["stablecoins"]["stable_supply_usd"].reindex(idx).interpolate(limit=5, limit_area="inside")
+        st = raw["stablecoins"]["stable_supply_usd"].reindex(idx).ffill(limit=5)  # 只沿用前值，不用缺值之後的資料
         ind["stable_growth_90d"] = st.pct_change(90, fill_method=None) * 100
     if len(raw.get("coinbase_premium", [])):
         ind["coinbase_premium_7d"] = (raw["coinbase_premium"]["coinbase_premium"].reindex(idx)
@@ -229,7 +229,8 @@ def rolling_percentile(s: pd.Series) -> pd.Series:
     v = s.dropna()
     if len(v) < PCT_MIN:
         return pd.Series(np.nan, index=s.index)
-    return (v.rolling(PCT_WINDOW, min_periods=PCT_MIN).rank(pct=True) * 100).reindex(s.index)
+    # 視窗以日曆天計（4 年），不是「觀測筆數」，缺資料的日子不會把視窗拉長
+    return (v.rolling(f"{PCT_WINDOW}D", min_periods=PCT_MIN).rank(pct=True) * 100).reindex(s.index)
 
 
 def score_percentile(pct: pd.Series) -> pd.Series:
@@ -403,7 +404,7 @@ def compute_cold(ind: pd.DataFrame, tops, bottoms):
         bot = k.map(lambda i: _fit(*zip(*bot_pts), i - 0.5))
         top = k.map(lambda i: _fit(*zip(*top_pts), i))
         neutral = (bot + top) / 2 if key not in COLD_NEUTRAL_FIXED else pd.Series(COLD_NEUTRAL_FIXED[key], index=s.index)
-        scores[key] = ((neutral - s) / (neutral - bot) * 100).clip(0, 120)
+        scores[key] = ((neutral - s) / (neutral - bot) * 100).clip(0, 120).where(neutral > bot)  # 中性 ≤ 預期底部時無法計分
         meta[key] = {"method": "cycle_bottom", "expected_bottom": float(bot.iloc[-1]), "neutral": float(neutral.iloc[-1]),
                      "past_bottoms": {str(bottoms[int(x - 0.5)].date()): v for x, v in bot_pts}}
     filled = scores.ffill()

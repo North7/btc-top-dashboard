@@ -100,18 +100,24 @@ def _reason(k, zh):
 
 def _verdict(ct) -> str:
     cur, d = ct["current_low"], ct["decisive_date"]
-    price = f"${cur['price']:,.0f}"
+    h = ct.get("hypothesis") or {"candidate_low_date": cur["date"], "candidate_low_price": cur["price"]}
+    cd, cp = h["candidate_low_date"], f"${h['candidate_low_price']:,.0f}"
+    if ct["status"] == "failed":
+        return (f"⟪假說不成立：候選低點 {cp}（{cd}）已於 {ct['broken_date']} 被跌破，本輪低點不是週期底部；新低為 ${cur['price']:,.0f}（{cur['date']}）。"
+                f"|Hypothesis failed: the candidate low of {cp} ({cd}) was broken on {ct['broken_date']}, so it was not the cycle bottom; "
+                f"the new low is ${cur['price']:,.0f} ({cur['date']}).⟫")
     if ct["status"] == "testing":
-        return (f"⟪驗證中：若到 {d} 為止都沒有跌破本輪低點 {price}（{cur['date']}），支持「本輪低點即週期底部、ETF 時代熊市變淺」；"
-                f"若之後出現更低的低點且 MVRV 跌破 1，則代表底部尚未出現。"
-                f"|Testing: if price holds above this cycle's low of {price} ({cur['date']}) through {d}, that supports "
-                f"“this low is the cycle bottom and ETF-era bears are shallower”. A lower low with MVRV below 1 would mean the bottom is still ahead.⟫")
+        return (f"⟪驗證中：若到 {d} 為止都沒有跌破候選低點 {cp}（{cd}），支持「本輪低點即週期底部、ETF 時代熊市變淺」；"
+                f"一旦跌破即判定假說不成立。候選低點在建立假說時固定，之後不會跟著新低移動。"
+                f"|Testing: if price holds above the candidate low of {cp} ({cd}) through {d}, that supports "
+                f"“this low is the cycle bottom and ETF-era bears are shallower”. A break below it fails the hypothesis. "
+                f"The candidate low was fixed when the hypothesis was set and does not move with new lows.⟫")
     shallow = ct["days_mvrv_below_1_this_cycle"] == 0
-    return (f"⟪底部時間窗口已於 {d} 結束，本輪低點 {cur['date']}（{price}）未被跌破，"
+    return (f"⟪底部時間窗口已於 {d} 結束，候選低點 {cd}（{cp}）未被跌破，"
             + ("且估值未出現投降（MVRV 從未跌破 1），支持「熊市變淺」。" if shallow else "期間曾出現估值投降（MVRV 跌破 1），屬傳統型底部。")
-            + f"|The bottom window closed on {d} and this cycle's low of {cur['date']} ({price}) held. "
+            + f"|The bottom window closed on {d} and the candidate low of {cd} ({cp}) held. "
             + ("Valuation never capitulated (MVRV never below 1), supporting “shallower bear markets”." if shallow
-               else "Valuation did capitulate (MVRV below 1) — a classic bottom.") + "⟫")
+               else "Valuation capitulated at some point (MVRV below 1): a classic bottom.") + "⟫")
 
 
 def _fmt(v, unit=""):
@@ -163,7 +169,8 @@ def _series(hist: pd.DataFrame, ind: pd.DataFrame, defs: dict) -> dict:
     for k, (grp, label, col, unit, desc) in COLD_INDICATORS.items():
         cols["v_" + k] = (hist[col] if col in hist else ind[col].reindex(hist.index))
         cols["s_" + k] = hist["coldscore_" + k]
-    for k, col in (("seq", "strat_eq"), ("sbh", "strat_bh"), ("seqb", "strat_eq_b"), ("ma50", "mid_ma50"), ("ma200", "mid_ma200"), ("ma20w", "mid_ma20w"), ("stl", "mid_st_line"), ("std", "mid_st_dir")):
+    for k, col in (("seq", "strat_eq"), ("sbh", "strat_bh"), ("seqb", "strat_eq_b"), ("seq2018", "strat_eq_2018"), ("seqb2018", "strat_eq_b_2018"),
+                   ("seq2022", "strat_eq_2022"), ("seqb2022", "strat_eq_b_2022"), ("ma50", "mid_ma50"), ("ma200", "mid_ma200"), ("ma20w", "mid_ma20w"), ("stl", "mid_st_line"), ("std", "mid_st_dir")):
         if col in hist:
             cols[k] = hist[col]
     cols["v_ref_delta"] = ind["delta_ratio"].reindex(hist.index) if "delta_ratio" in ind else None
@@ -295,7 +302,7 @@ def _where(d, center, flat, ramp) -> str:
 
 
 BOTTOM_LEVEL_TEXT = {"none": "⟪未觸發|Not triggered⟫", "zone": "⟪底部區|Bottom zone⟫", "strong": "⟪強烈底部|Strong bottom⟫"}
-STATUS_TEXT = {"testing": "⟪驗證中|Testing⟫", "supported": "⟪支持：熊市變淺|Supported: shallower bear⟫", "classic": "⟪傳統型底部|Classic bottom⟫"}
+STATUS_TEXT = {"failed": "⟪假說不成立|Hypothesis failed⟫", "testing": "⟪驗證中|Testing⟫", "supported": "⟪支持：熊市變淺|Supported: shallower bear⟫", "classic": "⟪傳統型底部|Classic bottom⟫"}
 
 
 TICKER_CODE = {"mvrv_z": "MVRV-Z", "nupl": "NUPL", "puell": "PUELL", "rp_multiple": "MVRV", "etf_flow_30d": "ETF 30D",
@@ -502,7 +509,7 @@ def _future(latest: dict) -> str:
       <li><b>⟪樂觀|Optimistic⟫</b>⟪冪律趨勢價（全部歷史擬合，頂部倍數取 1.0）。若頂部倍數也照 11 → 6.6 → 2.9 → 1.2 的趨勢再下降，結果會接近「中間」。|The power-law trend price (fitted on all history, top multiple 1.0). If the top multiple keeps falling along 11 → 6.6 → 2.9 → 1.2, the result lands near “Base”.⟫</li>
       <li><b>⟪未畫出|Not drawn⟫</b>⟪頂部 ÷ 前一頂部（{' → '.join(f'{x:g}' for x in i['top_over_prior_top'])}）外推約 {_k(i['ratio_method_top'])}，低於上一個頂部，等於「下一輪不創新高」；列出供參考。|Top ÷ previous top ({' → '.join(f'{x:g}' for x in i['top_over_prior_top'])}) extrapolates to about {_k(i['ratio_method_top'])} — below the last top, i.e. no new high next cycle; listed for reference.⟫</li>
     </ul>
-    <p class="muted small" style="margin:6px 0 0">⟪路徑形狀取過去三輪「低點 → 頂部」走法的平均，從今天的價格接到各情境頂部；頂部日期取兩個時機時鐘預估中心的中點。各方法只有 3–4 個歷史點，且都假設「漲幅逐輪遞減」會延續，最低與最高相差約 {t['optimistic'] / t['conservative']:.0f} 倍——這個差距本身就是不確定性。每日依最新數據重算；不是預測，也不是目標價。|Path shape is the average of the last three cycles' low-to-top paths, joined from today's price to each scenario top; the top date is the midpoint of the two timing clocks' centers. Each method rests on only 3–4 data points and assumes diminishing returns continue; high and low differ by about {t['optimistic'] / t['conservative']:.0f}× — that gap is the uncertainty. Recomputed daily; not a forecast or a price target.⟫</p>
+    <p class="muted small" style="margin:6px 0 0">⟪路徑形狀取過去三輪「低點 → 頂部」走法的平均，從今天的價格接到各情境頂部（經平滑並強制只升不降，實際走勢會有大回調）；頂部日期取兩個時機時鐘預估中心的中點。各方法只有 3–4 個歷史點，且都假設「漲幅逐輪遞減」會延續，最低與最高相差約 {t['optimistic'] / t['conservative']:.0f} 倍——這個差距本身就是不確定性。每日依最新數據重算；不是預測，也不是目標價。|Path shape is the average of the last three cycles' low-to-top paths, joined from today's price to each scenario top (smoothed and forced to only rise — real prices will have big pullbacks); the top date is the midpoint of the two timing clocks' centers. Each method rests on only 3–4 data points and assumes diminishing returns continue; high and low differ by about {t['optimistic'] / t['conservative']:.0f}× — that gap is the uncertainty. Recomputed daily; not a forecast or a price target.⟫</p>
   </div>"""
 
 
@@ -612,7 +619,7 @@ def _strategy(latest: dict) -> str:
         <li><b>⟪賣出|Sell⟫</b>⟪警戒中，週線 Supertrend（ATR 10 × 3）由多轉空 → 全部賣出。|On alert, the weekly Supertrend (ATR 10 × 3) turns down → sell everything.⟫</li>
         <li><b>⟪買回|Buy back⟫</b>⟪空手時，底部訊號 ≥ 50 或週線 Supertrend 由空轉多 → 全部買回。|In cash, bottom signal ≥ 50 or the weekly Supertrend turns up → buy everything back.⟫</li>
       </ol>
-      <p class="muted small">⟪頂部訊號與時機會提早亮，所以只用來「進入警戒」；真正賣出要等週線趨勢確認轉空。門檻固定為 50，未針對歷史最佳化；40／50／60 的 27 種組合回測都勝過持有。|The top signal and timing light up early, so they only put the strategy on alert; the actual sale waits for the weekly trend to confirm. Thresholds are fixed at 50, not fitted to history; all 27 combinations of 40/50/60 beat holding in backtests.⟫</p>
+      <p class="muted small">⟪頂部訊號與時機會提早亮，所以只用來「進入警戒」；真正賣出要等週線趨勢確認轉空。頂部訊號 = 熱度 × 時機 ÷ 100，不會超過時機，所以警戒條件實際上等於「頂部時機 ≥ 50」，熱度本身不影響交易。門檻固定為 50，未針對歷史最佳化；40／50／60 的 27 種組合都勝過持有，但實際只產生 3 條不同的持倉路徑，不是 27 次獨立驗證。|The top signal and timing light up early, so they only put the strategy on alert; the actual sale waits for the weekly trend to confirm. Top signal = heat × timing ÷ 100 never exceeds timing, so the alert condition is effectively “top timing ≥ 50” and heat itself does not affect trades. Thresholds are fixed at 50, not fitted to history; all 27 combinations of 40/50/60 beat holding, but they produce only 3 distinct position paths — not 27 independent tests.⟫</p>
     </div>"""
     bt = g["backtest"]
     bstats = (g.get("batch") or {}).get("by_start") or [None] * len(g["by_start"])
@@ -626,7 +633,7 @@ def _strategy(latest: dict) -> str:
       <div class="card-head"><div><div class="eyebrow">PERFORMANCE</div><h3>⟪各起點績效|Performance by start year⟫</h3></div></div>
       <div class="scroll"><table class="data fit"><thead><tr><th>⟪起點|Start⟫</th><th>⟪策略|Strategy⟫</th><th>⟪持有|Hold⟫</th><th>⟪策略／持有|Strat / hold⟫</th><th>⟪分批版／持有|Batch / hold⟫</th>
         <th class="wd">⟪策略年化|Strat CAGR⟫</th><th class="wd">⟪持有年化|Hold CAGR⟫</th><th>⟪策略最大回撤|Strat max DD⟫</th><th class="wd">⟪持有最大回撤|Hold max DD⟫</th></tr></thead><tbody>{rows}</tbody></table></div>
-      <p class="muted small" style="margin:8px 0 0">⟪從各年 1 月 1 日起投入 1 單位，至今的資金倍數。手續費每次 0.1%，空手時現金不計利息。分批版：進入警戒時先賣 1/3、週線 Supertrend 轉空再賣完，其餘相同（對照用）。|Growth of 1 unit invested on January 1 of each year to today. 0.1% fee per trade; cash earns nothing. Batch version: sells 1/3 on alert and the rest when the weekly Supertrend turns down; otherwise identical (for comparison).⟫</p>
+      <p class="muted small" style="margin:8px 0 0">⟪從各年 1 月 1 日起投入 1 單位，至今的資金倍數。每個起點都從「滿倉、未警戒」重新開始（不沿用起點以前的警戒狀態），所以 2018、2022 低於「2014 起連續運作」在同一區間的表現。手續費每次 0.1%，空手時現金不計利息。分批版：進入警戒時先賣 1/3、週線 Supertrend 轉空再賣完，其餘相同（對照用）。|Growth of 1 unit invested on January 1 of each year to today. Each start begins fresh — fully invested and not on alert (no alert state carried over from before the start) — so 2018 and 2022 come out lower than the same stretch of the continuous run from 2014. 0.1% fee per trade; cash earns nothing. Batch version: sells 1/3 on alert and the rest when the weekly Supertrend turns down; otherwise identical (for comparison).⟫</p>
     </div>"""
     trs = []
     for t in g["trades"]:
@@ -654,9 +661,10 @@ def _strategy(latest: dict) -> str:
       <div class="eyebrow">LIMITATIONS</div><h3>⟪限制|Limitations⟫</h3>
       <ul>
         <li>⟪不是賣在頂部：要等趨勢確認，過去賣出時已從頂部跌了 26–65%。超額報酬主要來自避開熊市、在接近底部時買回。|It does not sell the top: it waits for trend confirmation, and past sales came 26–65% below the peak. The edge comes from sitting out bear markets and buying back near bottoms.⟫</li>
-        <li>⟪會犯錯：2021-05 誤賣一次。持有期間仍可能經歷 −70% 等級的回撤。|It makes mistakes (a bad sale in 2021-05), and drawdowns of around −70% can still happen while holding.⟫</li>
+        <li>⟪會犯錯：2021-05 誤賣一次。沒有停損，持有期間仍可能經歷 −70% 到 −80% 的回撤（2018 起點的最大回撤與持有相同）。|It makes mistakes (a bad sale in 2021-05). There is no stop-loss, so drawdowns of −70% to −80% can still happen while holding (from a 2018 start, the max drawdown equals holding’s).⟫</li>
         <li>⟪樣本少：只有 4 次熊市可驗證；若四年週期不再延續，策略可能失效。|Small sample: only four bear markets to test; if the four-year cycle breaks, the strategy may fail.⟫</li>
-        <li>⟪逐輪回測：每一輪只用當時已發生的頂部與底部設定參數（不偷看未來）；最近一輪即網站目前的訊號。|Walk-forward: each cycle uses only the tops and bottoms known at the time (no look-ahead); the latest cycle uses the site's current signals.⟫</li>
+        <li>⟪逐輪回測：每一輪只用當時已發生的頂部與底部設定參數；最近一輪即網站目前的訊號。但頂部日期是事後指定的（當時無法立刻確認那就是頂部），資料修訂也沒有保留當時的版本，所以「完全沒有偷看未來」尚未被證明。|Walk-forward: each cycle uses only the tops and bottoms known at the time; the latest cycle uses the site's current signals. But top dates are assigned in hindsight (no one could confirm a top on the day), and data revisions aren’t versioned, so “no look-ahead at all” is not yet proven.⟫</li>
+        <li>⟪定案日（2026-10-06）之後，每天的決策寫入只新增、不改寫的紀錄（data/strategy_ledger.csv），定案後追蹤以這份紀錄為準。|From the finalization date (2026-10-06), each day’s decision is appended to a record that is never rewritten (data/strategy_ledger.csv); live tracking uses that record.⟫</li>
         <li>⟪模擬結果，不代表實際交易；僅供參考，不構成投資建議。|Simulated results, not actual trading. For reference only — not investment advice.⟫</li>
       </ul>
     </div>"""
@@ -1075,8 +1083,11 @@ def render_page(latest: dict, hist: pd.DataFrame, ind: pd.DataFrame, path: Path,
                                         # 各起點 1 月 1 日的精確基準（圖表資料一年前為每週一點）
                                         "alerts": latest.get("strategy", {}).get("alerts", []),
                                         "final": (latest.get("strategy", {}).get("live") or {}).get("final_date"),
-                                        "base": {y: [float(hist.loc[f"{y}-01-01", c]) for c in ("strat_eq", "strat_bh", "strat_eq_b")]
-                                                 for y in ("2014", "2018", "2022")} if "strat_eq" in hist else {}}),
+                                        "base": {y: [float(hist.loc[f"{y}-01-01", c]) for c in
+                                                     (("strat_eq", "strat_bh", "strat_eq_b") if y == "2014" else (f"strat_eq_{y}", "strat_bh", f"strat_eq_b_{y}"))]
+                                                 for y in ("2014", "2018", "2022")} if "strat_eq_2018" in hist else {},
+                                        # 2018／2022：各自從「滿倉、未警戒」重新開始的買賣點與警戒期間
+                                        "runs": latest.get("strategy", {}).get("chart_runs", {})}),
         "__MID_EVENTS__": json.dumps({k: [str(d.date()) for d in _mid_events(hist["mid_" + k + "_signal"] > 0)]
                                       for k in ("dip", "hot")} if "mid_dip_signal" in hist else {"dip": [], "hot": []}),
         "__BIGCATS__": _bigcats([(_cat(k, c["label"]), c["effective_weight"], c["score"], f"#heat/{k}", _band(c["score"]), BAND_TEXT[_band(c["score"])])
@@ -1300,6 +1311,7 @@ i.cool{background:var(--s-cold)}.cool-t{color:var(--s-cold)}
 .st-testing{background:color-mix(in srgb,var(--warm) 18%,transparent);color:var(--warm)}
 .st-supported{background:color-mix(in srgb,var(--s-bot) 18%,transparent);color:var(--s-bot)}
 .st-classic{background:var(--accent-soft);color:var(--accent)}
+.st-failed{background:color-mix(in srgb,var(--s-sig) 18%,transparent);color:var(--s-sig)}
 .verdict .q{font-size:14px;margin:0 0 10px}
 .countdown{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
 .countdown div{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
@@ -2049,7 +2061,7 @@ __STRATEGY__
   <h3>⟪為什麼要乘上時機？|Why multiply by timing?⟫</h3><p>⟪只看熱度時，2021-04、2024-03 這些中段高點的熱度其實比真正的週期頂部（2021-11、2025-10）還高。最終頂部的特徵是時間點很規律：最近三次都在減半後 525–546 天、低點後約 1,060 天。加入時機後，最近三輪的最終頂部都成為該輪訊號最高的時候。|On heat alone, mid-cycle highs such as 2021-04 and 2024-03 ran hotter than the real cycle tops (2021-11, 2025-10). What final tops share is timing: the last three came 525–546 days after the halving and about 1,060 days after the low. With timing included, each of the last three final tops is its cycle's highest signal.⟫</p>
   <h3>⟪底部訊號（切換到「底部訊號」模式）|Bottom signal (switch to “Bottom signal” mode)⟫</h3>
   <div class="callout">⟪底部訊號 = 冷度（7 日均）× 底部時機 ÷ 100<br>≥ __BWIN__ 底部區　·　≥ 70 強烈底部|Bottom signal = coldness (7d avg) × bottom timing ÷ 100<br>≥ __BWIN__ bottom zone　·　≥ 70 strong bottom⟫</div>
-  <p>⟪<b>冷度</b>：估值（MVRV、NUPL）50%、礦工（Puell、Hash Ribbons）30%、價格結構（AHR999、Power Law）20%。100 代表達到本輪推估的底部水準。|<b>Coldness</b>: valuation (MVRV, NUPL) 50%, miners (Puell, Hash Ribbons) 30%, price structure (AHR999, Power Law) 20%. 100 means this cycle's projected bottom level.⟫</p>
+  <p>⟪<b>冷度</b>：估值（MVRV、NUPL）50%、礦工（Puell、Hash Ribbons）30%、價格結構（AHR999、Power Law）20%。100 代表達到本輪推估的底部水準。MVRV 與 NUPL 都由市值與實現市值算出、高度相關，不是兩個獨立證據。|<b>Coldness</b>: valuation (MVRV, NUPL) 50%, miners (Puell, Hash Ribbons) 30%, price structure (AHR999, Power Law) 20%. 100 means this cycle's projected bottom level. MVRV and NUPL are both derived from market cap and realized cap and are highly correlated — not two independent pieces of evidence.⟫</p>
   <p>⟪<b>底部時機</b>：距上次頂部天數（過去底部平均約 379 天）與距上次減半天數（約 859 天）。|<b>Bottom timing</b>: days since the last top (past bottoms averaged ~379) and days since the last halving (~859).⟫</p>
   <p>⟪參數只依 2015、2018、2022 三次底部與中段假底部決定，本輪（2026）是樣本外檢驗；「週期結構驗證」會追蹤本輪低點是否就是週期底部。切換模式後，時機、熱度（冷度）、數據各頁都會換成對應內容。|Parameters were set only from the 2015, 2018 and 2022 bottoms and mid-cycle false bottoms, so this cycle (2026) is an out-of-sample test. The “cycle structure test” tracks whether this cycle's low is the bottom. Switching modes swaps the Timing, Heat/Cold and Data tabs to match.⟫</p>
   <h3>⟪中期狀態（「中期」分頁）|Market state (“Market” tab)⟫</h3>
@@ -2140,12 +2152,13 @@ function drawMid(){const el=$('#c-mid');if(!el||!D.ma200)return;const s=st.mid,i
   const j=i0+(s.hover==null?D.d.length-1-i0:s.hover),m=v=>v==null?'—':'$'+Math.round(v).toLocaleString();
   $('#tip-mid').innerHTML=`<b>${D.d[j]}</b><span>${m(D.p[j])}</span><span>Supertrend <b>${D.std[j]==null?'—':(D.std[j]>0?'⟪多|Up⟫ ':'⟪空|Down⟫ ')+m(D.stl[j])}</b></span><span>⟪200 日|200D⟫ <b>${m(D.ma200[j])}</b></span><span>⟪20 週|20W⟫ <b>${m(D.ma20w[j])}</b></span><span>⟪50 日|50D⟫ <b>${m(D.ma50[j])}</b></span>`;}
 function drawStrat(){const el=$('#c-strat');if(!el||!D.seq)return;const s=st.strat;el.setAttribute('height',chartH(300,.55));
-  const i0=Math.max(0,D.d.findIndex(x=>x>=s.years+'-01-01')),bs=(STR.base||{})[s.years]||[D.seq[i0],D.sbh[i0],D.seqb&&D.seqb[i0]],b1=bs[0],b2=bs[1],b3=bs[2],since=D.d[i0];
-  const a=D.seq.map((v,i)=>i<i0||v==null?null:v/b1),b=D.sbh.map((v,i)=>i<i0||v==null?null:v/b2),c=(D.seqb||[]).map((v,i)=>i<i0||v==null?null:v/b3);
-  const al=(STR.alerts||[]).filter(x=>!x.to||x.to>=since);
+  const R=(STR.runs||{})[s.years],SQ=(R&&D['seq'+s.years])||D.seq,SQB=(R&&D['seqb'+s.years])||D.seqb,TR=R||STR;
+  const i0=Math.max(0,D.d.findIndex(x=>x>=s.years+'-01-01')),bs=(STR.base||{})[s.years]||[SQ[i0],D.sbh[i0],SQB&&SQB[i0]],b1=bs[0],b2=bs[1],b3=bs[2],since=D.d[i0];
+  const a=SQ.map((v,i)=>i<i0||v==null?null:v/b1),b=D.sbh.map((v,i)=>i<i0||v==null?null:v/b2),c=(SQB||[]).map((v,i)=>i<i0||v==null?null:v/b3);
+  const al=(TR.alerts||[]).filter(x=>!x.to||x.to>=since);
   chart(el,i0,[{a:b,c:'--price',w:1.6},{a:c,c:'--strat',w:1.5,dash:'5 5',op:.55},{a:a,c:'--strat',w:2.6,glow:true}],{log:true,axis:true,hover:s.hover,
     bands:al.map(x=>({from:x.from<since?since:x.from,to:x.to,c:'--topline',op:.14})),
-    marks:[{d:STR.final?[STR.final]:[],c:'--fg',dash:'1 3',op:.7},{d:al.map(x=>x.from).filter(x=>x>=since),c:'--topline',dash:'5 3',op:.9},{d:STR.sell.filter(x=>x>=since),c:'--s-sig',dash:'2 4',op:.85},{d:STR.buy.filter(x=>x>=since),c:'--s-bot',dash:'2 4',op:.85}]});
+    marks:[{d:STR.final?[STR.final]:[],c:'--fg',dash:'1 3',op:.7},{d:al.map(x=>x.from).filter(x=>x>=since),c:'--topline',dash:'5 3',op:.9},{d:TR.sell.filter(x=>x>=since),c:'--s-sig',dash:'2 4',op:.85},{d:TR.buy.filter(x=>x>=since),c:'--s-bot',dash:'2 4',op:.85}]});
   const j=i0+(s.hover==null?D.d.length-1-i0:s.hover),f=v=>v==null?'—':(v>=100?Math.round(v).toLocaleString():v.toFixed(2))+'×';
   $('#tip-strat').innerHTML=`<b>${D.d[j]}</b><span>⟪策略|Strategy⟫ <b>${f(a[j])}</b></span><span>⟪分批版|Batch⟫ <b>${f(c[j])}</b></span><span>⟪持有|Hold⟫ <b>${f(b[j])}</b></span>${al.some(x=>D.d[j]>=x.from&&(!x.to||D.d[j]<=x.to))?'<span class="tip-al">⟪警戒中|On alert⟫</span>':''}<span>${D.p[j]==null?'':'$'+Math.round(D.p[j]).toLocaleString()}</span>`;}
 /* 未來情境圖：2022 起的實際價格＋三條情境路徑（對數刻度、依日期） */

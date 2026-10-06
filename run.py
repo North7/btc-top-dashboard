@@ -167,14 +167,30 @@ def build_bottom(ind, hist, cold_sc, cold_grp, cold_meta, ribbon_min90, btim, bi
     cur["days_bottom_zone"] = int((seg >= BOTTOM_WINDOW).sum())
     mvrv_lt1 = int((ind.loc[last_top:, "rp_multiple"] < 1).sum())
     today = str(last.date())
-    if today <= decisive:
+    # 驗證基準固定：第一次建立假說時把「候選低點」與判定日寫入 data/cycle_test.json，之後不再移動。
+    # （2026-10 外部驗證指出：舊版每天改用「截至目前的最低點」，跌破後基準也跟著下移，判定永遠成立。）
+    hyp_path = DATA / "cycle_test.json"
+    hyp = json.loads(hyp_path.read_text()) if hyp_path.exists() else None
+    if not hyp or hyp.get("cycle_top") != str(last_top.date()):
+        hyp = {"cycle_top": str(last_top.date()), "hypothesis_created_at": today,
+               "candidate_low_date": cur["date"], "candidate_low_price": cur["price"], "deadline": decisive}
+        hyp_path.write_text(json.dumps(hyp, ensure_ascii=False, indent=2))
+    cand_d, cand_p, deadline = pd.Timestamp(hyp["candidate_low_date"]), hyp["candidate_low_price"], hyp["deadline"]
+    after = price.loc[cand_d + pd.Timedelta(days=1):].dropna()
+    broken = after[after < cand_p]
+    broken_date = str(broken.index[0].date()) if len(broken) else None
+    if broken_date:
+        status = "failed"
+        verdict = (f"假說不成立：候選低點 ${cand_p:,.0f}（{cand_d.date()}）已於 {broken_date} 被跌破，"
+                   f"本輪低點不是週期底部。新的低點為 ${cur['price']:,.0f}（{cur['date']}），如要再驗證需另建新假說。")
+    elif today <= deadline:
         status = "testing"
-        verdict = (f"驗證中：若到 {decisive} 為止都沒有跌破本輪低點 ${cur['price']:,.0f}（{cur['date']}），"
-                   f"支持「本輪低點即週期底部、ETF 時代熊市變淺」；若之後出現更低的低點且 MVRV 跌破 1，則代表底部尚未出現。")
+        verdict = (f"驗證中：若到 {deadline} 為止都沒有跌破候選低點 ${cand_p:,.0f}（{cand_d.date()}），"
+                   f"支持「本輪低點即週期底部、ETF 時代熊市變淺」；一旦跌破即判定假說不成立。")
     else:
         status = "supported" if mvrv_lt1 == 0 else "classic"
-        verdict = (f"底部時間窗口已於 {decisive} 結束，本輪低點 {cur['date']}（${cur['price']:,.0f}）未被跌破，"
-                   + ("且估值未出現投降（MVRV 從未跌破 1），支持「熊市變淺」。" if mvrv_lt1 == 0
+        verdict = (f"底部時間窗口已於 {deadline} 結束，候選低點 {cand_d.date()}（${cand_p:,.0f}）未被跌破，"
+                   + ("且估值未出現投降（MVRV 從未跌破 1），支持「熊市變淺」。之後若跌破，判定會改為不成立。" if mvrv_lt1 == 0
                       else "期間曾出現估值投降（MVRV 跌破 1），屬傳統型底部。"))
     return {
         "signal": r(sig, 1), "level": bottom_level(sig),
@@ -192,7 +208,7 @@ def build_bottom(ind, hist, cold_sc, cold_grp, cold_meta, ribbon_min90, btim, bi
                    "days_since_top": int(b["days_since_top"]), "days_since_halving": int(b["days_since_halving"]),
                    "last_top": str(last_top.date()), "last_halving": str(last_h.date()),
                    "window_by_top": by_top, "window_by_halving": by_h, **binfo},
-        "cycle_test": {"status": status, "decisive_date": decisive, "verdict": verdict,
+        "cycle_test": {"status": status, "decisive_date": deadline, "verdict": verdict, "hypothesis": hyp, "broken_date": broken_date,
                        "current_low": cur, "past_bottoms": past, "days_mvrv_below_1_this_cycle": mvrv_lt1},
         "note": "參數只依 2015、2018、2022 底部與中段假底部決定，本輪為樣本外檢驗。",
     }
@@ -215,7 +231,7 @@ def main():
     bsig = bottom_signal(cold, btim["timing"])
     mid, mid_info = compute_midterm(ind, raw.get("ohlc", pd.DataFrame()), today)
     live = pd.DataFrame({"sig": signal, "tim": tim["timing"], "bsig": bsig})
-    strat, strat_info = compute_strategy(ind, live, mid["st_dir"] if "st_dir" in mid else pd.Series(dtype=float), today)
+    strat, strat_info = compute_strategy(ind, live, mid["st_dir"] if "st_dir" in mid else pd.Series(dtype=float), today, DATA / "strategy_ledger.csv")
 
     # ---- 歷史時間序列 ----
     ind.to_csv(DATA / "indicators.csv", index_label="date", float_format="%.6g")

@@ -1,12 +1,16 @@
 """週期策略（2026-10 加入，經使用者同意公開）：「警戒 + 趨勢確認」，含逐輪回測與模擬資金曲線。
 
-規則（門檻事先固定為 50，未針對歷史最佳化；40/50/60 的 27 種組合回測皆勝過持有）：
+規則（門檻事先固定為 50，未針對歷史最佳化；40/50/60 的 27 種組合皆勝過持有，但實際只產生 3 條不同的持倉路徑）：
 - 持有中：頂部訊號 ≥ 50 或頂部時機 ≥ 50 → 進入警戒（保持到賣出）；警戒中週線 Supertrend 由多轉空 → 全部賣出。
+  注意：頂部訊號 = 熱度 × 時機 ÷ 100 ≤ 時機，所以這個條件實際上等於「頂部時機 ≥ 50」，熱度不影響交易（外部審查指出）。
 - 空手中：底部訊號 ≥ 50 或週線 Supertrend 由空轉多 → 全部買回。
 
 逐輪回測：日期落在第 k 個頂部之前的那一輪時，訊號參數只用當時已發生的頂部與底部計算（不偷看未來）；
 最後一輪（2025-10 頂部之後）即網站目前的訊號。第一輪只有 2013 一個減半後頂部，另加入 2011 頂部才能算出冷度。
 模擬：每次換倉手續費 0.1%，空手時現金不計利息。只供參考，不構成投資建議。
+各起點的回測都從「滿倉、未警戒」重新開始（不沿用起點以前的警戒狀態）。
+已知限制：頂部日期是事後指定、資料修訂沒有保留當時版本，所以「無前視」尚未被完整證明；
+定案日之後的每日決策寫入 data/strategy_ledger.csv（只新增、不改寫），實際追蹤以這份紀錄為準。
 """
 from __future__ import annotations
 
@@ -20,6 +24,7 @@ FINAL_DATE = "2026-10-06"  # 策略定案日：之前是回測，之後是實際
 BATCH_KEEP = 2 / 3  # 分批版（對照用）：進入警戒時先賣 1/3，週線 Supertrend 轉空再賣完
 FEE = 0.001
 START = "2014-01-01"
+CHART_STARTS = ["2018", "2022"]  # 資金曲線圖可切換的其他起點（2014 即主曲線）
 STARTS = ["2014-01-01", "2016-01-01", "2018-01-01", "2020-01-01", "2022-01-01"]
 # 每一輪「當時已知」的頂部月份（第 0 輪需要 2011 頂部才有已知底部）
 KNOWN = [["2011-06", "2013-12"], ["2011-06", "2013-12", "2017-12"], ["2013-12", "2017-12", "2021-11"]]
@@ -79,6 +84,12 @@ def positions(sig, tim, bsig, st, keep_on_alert: float = 1.0):
     return pd.Series(pos, index=sig.index), trades, pd.Series(armed_s, index=sig.index)
 
 
+def fresh(wf: pd.DataFrame, st: pd.Series, start: str, keep_on_alert: float = 1.0) -> pd.Series:
+    """從 start 當天以「滿倉、未警戒」重新開始跑狀態機。"""
+    f = wf.loc[start:]
+    return positions(f["sig"], f["tim"], f["bsig"], st.reindex(f.index), keep_on_alert)[0]
+
+
 def backtest(price: pd.Series, pos: pd.Series, start: str):
     p = price[start:].dropna()
     r = p.pct_change().fillna(0)
@@ -93,26 +104,39 @@ def backtest(price: pd.Series, pos: pd.Series, start: str):
             "max_dd": _r(dd(eq)), "max_dd_hold": _r(dd(bh)), "time_in": _r(w.mean())}, eq, bh
 
 
-def compute_strategy(ind: pd.DataFrame, live: pd.DataFrame, st: pd.Series, today: pd.Timestamp):
-    """回傳 (每日欄位：資金曲線、持倉, latest 用的 dict)。"""
+def _alerts(trades: list, start: str) -> list:
+    """警戒期間：進入警戒 → 賣出（尚未賣出則到今天）；start 以前開始、之後才賣出的警戒也保留。"""
+    out, cur = [], None
+    for t in trades:
+        if t["action"] == "arm":
+            cur = {"from": str(t["date"].date()), "to": None, "why": t["why"]}
+            out.append(cur)
+        elif t["action"] == "sell" and cur is not None:
+            cur["to"], cur = str(t["date"].date()), None
+    return [x for x in out if x["to"] is None or x["to"] >= start]
+
+
+def compute_strategy(ind: pd.DataFrame, live: pd.DataFrame, st: pd.Series, today: pd.Timestamp, ledger_path=None):
+    """回傳 (每日欄位：資金曲線、持倉, latest 用的 dict)。ledger_path：不可改寫的每日決策紀錄（CSV）。"""
     price = ind["price"].dropna()
     wf = walk_forward(ind, live).reindex(price.index)
     st = st.reindex(price.index)
     pos, trades, armed = positions(wf["sig"], wf["tim"], wf["bsig"], st)
     m, eq, bh = backtest(price, pos, START)
-    stats = [backtest(price, pos, s)[0] for s in STARTS]
+    stats = [backtest(price, fresh(wf, st, s), s)[0] for s in STARTS]
     pos_b, _, _ = positions(wf["sig"], wf["tim"], wf["bsig"], st, BATCH_KEEP)
     mb, eqb, _ = backtest(price, pos_b, START)
-    stats_b = [backtest(price, pos_b, s)[0] for s in STARTS]
-    # 警戒期間：進入警戒 → 賣出（尚未賣出則到今天）
-    alerts, cur = [], None
-    for t in trades:
-        if t["action"] == "arm":
-            cur = {"from": str(t["date"].date()), "to": None, "why": t["why"]}
-            alerts.append(cur)
-        elif t["action"] == "sell" and cur is not None:
-            cur["to"], cur = str(t["date"].date()), None
-    alerts = [x for x in alerts if x["to"] is None or x["to"] >= START]  # 2014 以前開始、之後才賣出的警戒也保留
+    stats_b = [backtest(price, fresh(wf, st, s, BATCH_KEEP), s)[0] for s in STARTS]
+    alerts = _alerts(trades, START)
+    # 圖表切換 2018／2022 起點時，用各自「重新開始」的資金曲線與買賣點（與績效表一致）
+    runs, extra = {}, {}
+    for y in CHART_STARTS:
+        f = wf.loc[f"{y}-01-01":]
+        p_y, t_y, _ = positions(f["sig"], f["tim"], f["bsig"], st.reindex(f.index))
+        extra[f"strat_eq_{y}"] = backtest(price, p_y, f"{y}-01-01")[1]
+        extra[f"strat_eq_b_{y}"] = backtest(price, fresh(wf, st, f"{y}-01-01", BATCH_KEEP), f"{y}-01-01")[1]
+        runs[y] = {k: [str(t["date"].date()) for t in t_y if t["action"] == k] for k in ("sell", "buy")}
+        runs[y]["alerts"] = _alerts(t_y, f"{y}-01-01")
 
     # 交易紀錄（含每次「賣出 → 買回」與「買回 → 賣出」的價格變化）
     tl = [t for t in trades if t["date"] >= pd.Timestamp(START)]
@@ -138,19 +162,51 @@ def compute_strategy(ind: pd.DataFrame, live: pd.DataFrame, st: pd.Series, today
         "now": {"top_signal": _r(live["sig"].iloc[-1], 1), "top_timing": _r(live["tim"].iloc[-1], 1),
                 "bottom_signal": _r(live["bsig"].iloc[-1], 1),
                 "supertrend": "up" if st.iloc[-1] > 0 else "down"},
-        "backtest": m, "by_start": stats, "trades": rows, "alerts": alerts,
-        "live": _live(price, pos, rows),
+        "backtest": m, "by_start": stats, "trades": rows, "alerts": alerts, "chart_runs": runs,
+        "live": _live(price, pos, rows, _ledger(ledger_path, wf, st, pos, armed, price)),
         "batch": {"keep_on_alert": _r(BATCH_KEEP), "position": _r(pos_b.iloc[-1]), "backtest": mb, "by_start": stats_b},
     }
-    df = pd.DataFrame({"strat_eq": eq, "strat_bh": bh, "strat_eq_b": eqb, "strat_pos": pos.reindex(eq.index)})
+    df = pd.DataFrame({"strat_eq": eq, "strat_bh": bh, "strat_eq_b": eqb, "strat_pos": pos.reindex(eq.index), **extra})
     return df, info
 
 
-def _live(price: pd.Series, pos: pd.Series, rows: list) -> dict:
-    """定案日之後的實際追蹤（不偷看未來的每日訊號，與回測相同的規則）。"""
+LEDGER_COLS = ["date", "price", "top_signal", "top_timing", "bottom_signal", "supertrend", "armed", "position", "recorded_at"]
+
+
+def _ledger(path, wf, st, pos, armed, price) -> pd.DataFrame | None:
+    """定案日之後的每日決策：只新增當天以前尚未記錄的日期，既有列一律不改寫。回傳完整紀錄。"""
+    if path is None:
+        return None
+    from pathlib import Path
+    path = Path(path)
+    old = pd.read_csv(path, dtype={"date": str}) if path.exists() else pd.DataFrame(columns=LEDGER_COLS)
+    done = set(old["date"])
+    now = pd.Timestamp.now("UTC").strftime("%Y-%m-%dT%H:%MZ")
+    new = []
+    for d in price[FINAL_DATE:].dropna().index:
+        k = str(d.date())
+        if k in done:
+            continue
+        new.append({"date": k, "price": _r(price[d], 2), "top_signal": _r(wf.at[d, "sig"], 2), "top_timing": _r(wf.at[d, "tim"], 2),
+                    "bottom_signal": _r(wf.at[d, "bsig"], 2), "supertrend": int(st.get(d)) if pd.notna(st.get(d)) else None,
+                    "armed": bool(armed.get(d)), "position": _r(pos.get(d)), "recorded_at": now})
+    if new:
+        old = pd.concat([old, pd.DataFrame(new, columns=LEDGER_COLS)], ignore_index=True) if len(old) else pd.DataFrame(new, columns=LEDGER_COLS)
+        old.to_csv(path, index=False)
+    return old
+
+
+def _live(price: pd.Series, pos: pd.Series, rows: list, ledger: pd.DataFrame | None = None) -> dict:
+    """定案日之後的實際追蹤：有決策紀錄時，持倉以紀錄為準（不受之後資料修訂或程式改動影響）。"""
     p = price[FINAL_DATE:].dropna()
     out = {"final_date": FINAL_DATE, "days": int(max(0, (price.index[-1] - pd.Timestamp(FINAL_DATE)).days)),
            "trades": [t for t in rows if t["date"] >= FINAL_DATE]}
+    if ledger is not None and len(ledger):
+        lp = pd.Series(ledger["position"].astype(float).values, index=pd.to_datetime(ledger["date"]))
+        diff = int((lp != pos.reindex(lp.index)).sum())
+        out.update({"source": "ledger", "ledger_rows": int(len(lp)), "recomputed_differs": diff})
+        pos = pos.copy()
+        pos.loc[lp.index] = lp.values
     if len(p) >= 2:
         m, _, _ = backtest(price, pos, FINAL_DATE)
         out.update({"strategy": m["strategy"], "hold": m["hold"], "max_dd": m["max_dd"], "max_dd_hold": m["max_dd_hold"]})

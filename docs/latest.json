@@ -1,12 +1,12 @@
 {
   "date": "2026-10-06",
-  "generated_at": "2026-10-06T10:05:19Z",
+  "generated_at": "2026-10-06T14:44:04Z",
   "price_usd": 85834.53,
   "price_date": "2026-10-05",
   "top_signal": 0.0,
   "signal_level": "none",
-  "heat_score": 44.7,
-  "composite_score": 44.7,
+  "heat_score": 44.8,
+  "composite_score": 44.8,
   "timing_score": 0.0,
   "hot_categories": 0,
   "zone": "warm",
@@ -223,7 +223,15 @@
     "cycle_test": {
       "status": "testing",
       "decisive_date": "2026-12-19",
-      "verdict": "驗證中：若到 2026-12-19 為止都沒有跌破本輪低點 $58,525（2026-06-30），支持「本輪低點即週期底部、ETF 時代熊市變淺」；若之後出現更低的低點且 MVRV 跌破 1，則代表底部尚未出現。",
+      "verdict": "驗證中：若到 2026-12-19 為止都沒有跌破候選低點 $58,525（2026-06-30），支持「本輪低點即週期底部、ETF 時代熊市變淺」；一旦跌破即判定假說不成立。",
+      "hypothesis": {
+        "cycle_top": "2025-10-06",
+        "hypothesis_created_at": "2026-10-06",
+        "candidate_low_date": "2026-06-30",
+        "candidate_low_price": 58525.08,
+        "deadline": "2026-12-19"
+      },
+      "broken_date": null,
       "current_low": {
         "date": "2026-06-30",
         "price": 58525.08,
@@ -451,14 +459,14 @@
       },
       {
         "start": "2018",
-        "strategy": 20.77,
+        "strategy": 13.12,
         "hold": 6.37,
-        "ratio": 3.26,
-        "cagr": 0.4139,
+        "ratio": 2.06,
+        "cagr": 0.3416,
         "cagr_hold": 0.2355,
-        "max_dd": -0.7051,
+        "max_dd": -0.8138,
         "max_dd_hold": -0.8138,
-        "time_in": 0.7534
+        "time_in": 0.8434
       },
       {
         "start": "2020",
@@ -473,14 +481,14 @@
       },
       {
         "start": "2022",
-        "strategy": 5.52,
+        "strategy": 2.69,
         "hold": 1.8,
-        "ratio": 3.06,
-        "cagr": 0.4319,
+        "ratio": 1.49,
+        "cagr": 0.2307,
         "cagr_hold": 0.1321,
-        "max_dd": -0.3549,
+        "max_dd": -0.6687,
         "max_dd_hold": -0.6687,
-        "time_in": 0.7924
+        "time_in": 0.8827
       }
     ],
     "trades": [
@@ -582,6 +590,52 @@
         "why": "tim"
       }
     ],
+    "chart_runs": {
+      "2018": {
+        "sell": [
+          "2021-05-24",
+          "2022-01-10",
+          "2025-11-17"
+        ],
+        "buy": [
+          "2021-10-11",
+          "2022-06-16",
+          "2026-06-09"
+        ],
+        "alerts": [
+          {
+            "from": "2021-01-07",
+            "to": "2021-05-24",
+            "why": "tim"
+          },
+          {
+            "from": "2021-10-12",
+            "to": "2022-01-10",
+            "why": "tim"
+          },
+          {
+            "from": "2025-01-21",
+            "to": "2025-11-17",
+            "why": "tim"
+          }
+        ]
+      },
+      "2022": {
+        "sell": [
+          "2025-11-17"
+        ],
+        "buy": [
+          "2026-06-09"
+        ],
+        "alerts": [
+          {
+            "from": "2025-01-21",
+            "to": "2025-11-17",
+            "why": "tim"
+          }
+        ]
+      }
+    },
     "live": {
       "final_date": "2026-10-06",
       "days": 0,
@@ -630,14 +684,14 @@
         },
         {
           "start": "2018",
-          "strategy": 32.77,
+          "strategy": 16.18,
           "hold": 6.37,
-          "ratio": 5.14,
-          "cagr": 0.4895,
+          "ratio": 2.54,
+          "cagr": 0.3742,
           "cagr_hold": 0.2355,
-          "max_dd": -0.6145,
+          "max_dd": -0.8138,
           "max_dd_hold": -0.8138,
-          "time_in": 0.6949
+          "time_in": 0.7885
         },
         {
           "start": "2020",
@@ -652,14 +706,14 @@
         },
         {
           "start": "2022",
-          "strategy": 6.14,
+          "strategy": 2.86,
           "hold": 1.8,
-          "ratio": 3.4,
-          "cagr": 0.4644,
+          "ratio": 1.59,
+          "cagr": 0.2473,
           "cagr_hold": 0.1321,
-          "max_dd": -0.3549,
+          "max_dd": -0.6687,
           "max_dd_hold": -0.6687,
-          "time_in": 0.7332
+          "time_in": 0.8252
         }
       ]
     },
@@ -784,7 +838,7 @@
     "capital_flows": {
       "label": "資金流與機構",
       "weight": 0.2,
-      "score": 10.2,
+      "score": 10.8,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -796,32 +850,32 @@
           "value": 2080.4645,
           "score": 30.2,
           "percentile": 54.6,
-          "as_of": "2026-10-06",
+          "as_of": "2026-10-05",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 971
+          "history_days": 970
         },
         "etf_flow_momentum": {
           "label": "ETF 流入動能",
           "unit": "百萬美元",
           "role": "score",
           "description": "最近 30 日淨流入減前 30 日，正值代表流入在加速。",
-          "value": -1358.9446,
+          "value": -1457.79,
           "score": 0.0,
-          "percentile": 33.8,
-          "as_of": "2026-10-06",
+          "percentile": 33.2,
+          "as_of": "2026-10-05",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 941
+          "history_days": 940
         },
         "stable_growth_90d": {
           "label": "穩定幣 90 日增速",
           "unit": "%",
           "role": "score",
           "description": "穩定幣總供給 90 日成長率，代表場內可用的新資金。",
-          "value": 1.8951,
+          "value": 1.9006,
           "score": 10.7,
           "percentile": 42.0,
           "as_of": "2026-10-06",
@@ -835,9 +889,9 @@
           "unit": "%",
           "role": "score",
           "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
-          "value": -0.0282,
-          "score": 0.0,
-          "percentile": 29.5,
+          "value": -0.0173,
+          "score": 2.1,
+          "percentile": 36.4,
           "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
@@ -850,7 +904,7 @@
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 5.0,
+      "score": 4.9,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -873,9 +927,9 @@
           "unit": "%",
           "role": "score",
           "description": "全市場 BTC 合約未平倉量占市值比例，代表槓桿規模。",
-          "value": 0.1876,
+          "value": 0.1914,
           "score": 0.0,
-          "percentile": 19.1,
+          "percentile": 21.9,
           "as_of": "2026-10-05",
           "stale": false,
           "status": "ok",
@@ -887,9 +941,9 @@
           "unit": "%",
           "role": "score",
           "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
-          "value": 4.9831,
-          "score": 15.0,
-          "percentile": 44.7,
+          "value": 4.9718,
+          "score": 14.8,
+          "percentile": 44.6,
           "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
