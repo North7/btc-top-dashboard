@@ -15,6 +15,7 @@ import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from btc_top import sources
@@ -32,6 +33,18 @@ DATA = OUT / "data"
 RAW = DATA / "raw"
 DOCS = OUT / "docs"
 STALE_DAYS = 3  # 資料日期落後超過幾天視為 stale
+# 只在美股交易日有資料、且當天資金流隔天才公布的來源：改用工作日計算落後天數（避免週末後每週二誤報）
+TRADING_DAY_SOURCES = {"etf"}
+TRADING_DAY_LAG = 2  # 落後超過幾個工作日視為 stale（容許一天美股假日）
+
+
+def is_lagging(name: str, last, today: pd.Timestamp) -> bool:
+    """資料最新日期是否落後太多。"""
+    if last is None:
+        return True
+    if name in TRADING_DAY_SOURCES:
+        return int(np.busday_count((last + pd.Timedelta(days=1)).date(), today.date())) > TRADING_DAY_LAG
+    return (today - last).days > STALE_DAYS
 
 # 私人版：BGeometrics 端點（每天 3 次請求，免費額度每天 15 次）
 BGEO = {"bgeo_lth_sopr": ("lth-sopr", "lthSopr"), "bgeo_cdd": ("cdd", "cdd"),
@@ -89,7 +102,7 @@ def fetch_all(today: pd.Timestamp):
             raw[name] = old
             last = old.index.max()
             status[name] = {"fetched": True, "last_date": str(last.date()),
-                            "stale": (today - last).days > STALE_DAYS, "available": True,
+                            "stale": is_lagging(name, last, today), "available": True,
                             "errors": [], "note": "今日已抓取，沿用"}
             print(f"[{name}] 今日已抓取，沿用 最新 {last.date()}")
             continue
@@ -113,7 +126,7 @@ def fetch_all(today: pd.Timestamp):
         status[name] = {
             "fetched": fetched,
             "last_date": str(last.date()) if last is not None else None,
-            "stale": (not fetched) or last is None or (today - last).days > STALE_DAYS,
+            "stale": (not fetched) or is_lagging(name, last, today),
             "available": len(df) > 0,
             "errors": errors if not fetched else [],
         }

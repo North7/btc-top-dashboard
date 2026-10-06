@@ -1,6 +1,6 @@
 {
   "date": "2026-10-06",
-  "generated_at": "2026-10-06T00:54:28Z",
+  "generated_at": "2026-10-06T01:14:13Z",
   "price_usd": 85834.53,
   "price_date": "2026-10-05",
   "top_signal": 0.0,
@@ -10,7 +10,7 @@
   "timing_score": 0.0,
   "hot_categories": 0,
   "zone": "warm",
-  "stale": true,
+  "stale": false,
   "timing": {
     "score": 0.0,
     "score_halving": 0.0,
@@ -120,8 +120,8 @@
         "expected_bottom": 0.5939,
         "neutral": 1.0,
         "past_bottoms": {
-          "2015-01-14": 0.3123250950141824,
-          "2018-12-15": 0.3893759732132719,
+          "2015-01-14": 0.3123250950141825,
+          "2018-12-15": 0.38937597321327183,
           "2022-11-09": 0.4786260405008019
         }
       },
@@ -282,7 +282,7 @@
             "2013-12-04": 7.704061973442023,
             "2017-12-16": 9.354234932070232,
             "2021-11-08": 3.5338955722930834,
-            "2025-10-06": 2.5298647876421483
+            "2025-10-06": 2.529864787642148
           }
         },
         "nupl": {
@@ -338,7 +338,7 @@
             "2013-12-04": 4.718179179999999,
             "2017-12-16": 4.43076633,
             "2021-11-08": 2.854649564891,
-            "2025-10-06": 2.287145426879909
+            "2025-10-06": 2.2871454268799094
           }
         }
       },
@@ -377,7 +377,7 @@
       "weight": 0.2,
       "score": 9.3,
       "status": "ok",
-      "stale": true,
+      "stale": false,
       "indicators": {
         "etf_flow_30d": {
           "label": "ETF 30 日累計淨流入",
@@ -388,7 +388,7 @@
           "score": 32.0,
           "percentile": 55.8,
           "as_of": "2026-10-06",
-          "stale": true,
+          "stale": false,
           "status": "ok",
           "method": "percentile",
           "history_days": 971
@@ -402,7 +402,7 @@
           "score": 0.0,
           "percentile": 34.2,
           "as_of": "2026-10-06",
-          "stale": true,
+          "stale": false,
           "status": "ok",
           "method": "percentile",
           "history_days": 941
@@ -426,9 +426,9 @@
           "unit": "%",
           "role": "score",
           "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
-          "value": -0.0261,
+          "value": -0.0252,
           "score": 0.0,
-          "percentile": 30.8,
+          "percentile": 31.4,
           "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
@@ -441,7 +441,7 @@
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 5.0,
+      "score": 5.2,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -450,9 +450,9 @@
           "unit": "%",
           "role": "score",
           "description": "永續合約多方付給空方的費率。越高代表槓桿做多越擁擠。",
-          "value": 3.7405,
+          "value": 3.1696,
           "score": 0.0,
-          "percentile": 28.5,
+          "percentile": 24.5,
           "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
@@ -478,9 +478,9 @@
           "unit": "%",
           "role": "score",
           "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
-          "value": 4.9836,
-          "score": 15.1,
-          "percentile": 44.8,
+          "value": 5.0038,
+          "score": 15.5,
+          "percentile": 45.1,
           "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
@@ -585,7 +585,7 @@
     "etf": {
       "fetched": true,
       "last_date": "2026-10-02",
-      "stale": true,
+      "stale": false,
       "available": true,
       "errors": []
     }
