@@ -435,9 +435,9 @@ def _midterm(latest: dict) -> str:
         <span class="static"><i class="dash" style="border-top-color:var(--a3)"></i>⟪短線過熱觸發|Overheating triggered⟫</span>
       </div>
     </div>
-    <p class="muted small mid-note">⟪依 2026-10 的指標研究設計：48 個指標以 2014–2019 年觀察、2020–2026 年檢驗。單一過熱指標（RSI、均線乖離、貪婪等）之後平均仍續漲，組合過熱之後好壞參半，都不是可靠的賣訊號；牛市中的超賣組合有小幅優勢但次數少；
+    <p class="muted small mid-note">⟪依 2026-10 的指標研究設計：48 個指標以 2014–2019 年觀察、2020–2026 年檢驗。單一過熱指標（RSI、均線乖離、貪婪等）之後平均仍續漲，組合過熱之後好壞參半，都不是可靠的賣訊號；牛市回調觀察與一般牛市日沒有可靠差異（2020 年後的觸發之後表現反而較差，早期優勢主要來自 2017 年兩次），僅作狀態參考；
 週線 Supertrend（ATR 10 × 3，以 Bitstamp 日 K 計算、只用已收完的週 K）約一年翻轉一次、很少來回，但屬確認型，翻空時通常已離高點數週。門檻採常見慣例值、未針對歷史最佳化。僅供參考，不構成投資建議。|
-Built from an October 2026 indicator study: 48 indicators, observed on 2014–2019 and tested on 2020–2026. Single overheating readings (RSI, distance from moving averages, greed) were on average followed by further gains, and combined overheating had mixed outcomes — neither is a reliable sell signal; oversold combinations in bull markets showed a small edge but few occurrences.
+Built from an October 2026 indicator study: 48 indicators, observed on 2014–2019 and tested on 2020–2026. Single overheating readings (RSI, distance from moving averages, greed) were on average followed by further gains, and combined overheating had mixed outcomes — neither is a reliable sell signal; the bull-market dip watch shows no reliable difference from ordinary bull-market days (after 2020 its triggers did worse; the earlier edge came mostly from two 2017 cases) — a state reference only.
 The weekly Supertrend (ATR 10 × 3, from Bitstamp daily candles, completed weeks only) flips about once a year with few whipsaws, but it confirms rather than predicts — by the time it turns down, price is usually weeks past the high. Thresholds are conventional values, not fitted to history. For reference only — not investment advice.⟫</p>
   </div>"""
 
@@ -448,6 +448,44 @@ WHY = {"st_down": "⟪週線 ST 轉空|Weekly ST down⟫", "st_up": "⟪週線 S
 
 def _x(v):
     return "—" if v is None else f"{v:,.1f}×" if v < 100 else f"{v:,.0f}×"
+
+
+def _k(v):
+    return f"${v / 1000:,.0f}k"
+
+
+def _future(latest: dict) -> str:
+    """週期策略頁：未來情境（三條歷史規律外推的價格路徑，不是預測）。"""
+    c = latest.get("scenarios")
+    if not c:
+        return ""
+    t, i = c["tops"], c["inputs"]
+    return f"""
+  <div class="card st-fut">
+    <div class="card-head"><div><div class="eyebrow">SCENARIOS · ⟪情境推演，不是預測|SCENARIOS, NOT FORECASTS⟫</div><h3>⟪下一個頂部的三種情境|Three scenarios for the next top⟫</h3></div></div>
+    <div class="fut-kpis">
+      <div class="c"><span>⟪保守|Conservative⟫</span><b>{_k(t['conservative'])}</b><em>⟪{t['conservative'] / c['price']:.1f} 倍於今天|{t['conservative'] / c['price']:.1f}× today⟫</em></div>
+      <div class="m"><span>⟪中間|Base⟫</span><b>{_k(t['base'])}</b><em>⟪{t['base'] / c['price']:.1f} 倍於今天|{t['base'] / c['price']:.1f}× today⟫</em></div>
+      <div class="o"><span>⟪樂觀|Optimistic⟫</span><b>{_k(t['optimistic'])}</b><em>⟪{t['optimistic'] / c['price']:.1f} 倍於今天|{t['optimistic'] / c['price']:.1f}× today⟫</em></div>
+      <div><span>⟪預估頂部日|Projected top date⟫</span><b class="d">{c['top_date'][:7]}</b><em>⟪窗口 {c['window']['from'][:7]} – {c['window']['to'][:7]}|window {c['window']['from'][:7]} – {c['window']['to'][:7]}⟫</em></div>
+    </div>
+    <div class="tip" id="tip-fut"></div>
+    <svg class="chart" id="c-fut" height="360" role="img" aria-label="⟪未來價格情境|Future price scenarios⟫"></svg>
+    <div class="legend">
+      <span class="static"><i style="background:var(--fg)"></i>⟪BTC 價格|BTC price⟫</span>
+      <span class="static"><i style="height:0;background:none;border-top:2px dashed var(--s-cold)"></i>⟪保守|Conservative⟫</span>
+      <span class="static"><i style="height:0;background:none;border-top:2px dashed var(--strat)"></i>⟪中間|Base⟫</span>
+      <span class="static"><i style="height:0;background:none;border-top:2px dashed var(--topline)"></i>⟪樂觀|Optimistic⟫</span>
+      <span class="static"><i style="height:10px;background:color-mix(in srgb,var(--a3) 30%,transparent)"></i>⟪預估頂部窗口|Projected top window⟫</span>
+    </div>
+    <ul class="fut-how">
+      <li><b>⟪保守|Conservative⟫</b>⟪頂部 ÷ 前一輪低點的倍數逐輪遞減（{' → '.join(f'{x:g}' for x in i['top_over_prior_low'])}），外推下一輪約 {i['next_top_over_low']} 倍 × 本輪低點 ${i['cycle_low']:,.0f}。|The top-to-prior-low multiple keeps shrinking ({' → '.join(f'{x:g}' for x in i['top_over_prior_low'])}); extrapolated to about {i['next_top_over_low']}× × this cycle's ${i['cycle_low']:,.0f} low.⟫</li>
+      <li><b>⟪中間|Base⟫</b>⟪頂部 MVRV（{' → '.join(f'{x:g}' for x in i['top_mvrv'])}）外推約 {i['next_top_mvrv']} × 實現價格（今 ${i['realized_price']:,.0f}，依近 4 年每年 +{i['realized_growth'] * 100:.0f}% 推到頂部日）。|Top MVRV ({' → '.join(f'{x:g}' for x in i['top_mvrv'])}) extrapolated to about {i['next_top_mvrv']} × the realized price (now ${i['realized_price']:,.0f}, grown at the last 4 years' {i['realized_growth'] * 100:.0f}% a year to the top date).⟫</li>
+      <li><b>⟪樂觀|Optimistic⟫</b>⟪冪律趨勢價（全部歷史擬合，頂部倍數取 1.0）。若頂部倍數也照 11 → 6.6 → 2.9 → 1.2 的趨勢再下降，結果會接近「中間」。|The power-law trend price (fitted on all history, top multiple 1.0). If the top multiple keeps falling along 11 → 6.6 → 2.9 → 1.2, the result lands near “Base”.⟫</li>
+      <li><b>⟪未畫出|Not drawn⟫</b>⟪頂部 ÷ 前一頂部（{' → '.join(f'{x:g}' for x in i['top_over_prior_top'])}）外推約 {_k(i['ratio_method_top'])}，低於上一個頂部，等於「下一輪不創新高」；列出供參考。|Top ÷ previous top ({' → '.join(f'{x:g}' for x in i['top_over_prior_top'])}) extrapolates to about {_k(i['ratio_method_top'])} — below the last top, i.e. no new high next cycle; listed for reference.⟫</li>
+    </ul>
+    <p class="muted small" style="margin:6px 0 0">⟪路徑形狀取過去三輪「低點 → 頂部」走法的平均，從今天的價格接到各情境頂部；頂部日期取兩個時機時鐘預估中心的中點。各方法只有 3–4 個歷史點，且都假設「漲幅逐輪遞減」會延續，最低與最高相差約 {t['optimistic'] / t['conservative']:.0f} 倍——這個差距本身就是不確定性。每日依最新數據重算；不是預測，也不是目標價。|Path shape is the average of the last three cycles' low-to-top paths, joined from today's price to each scenario top; the top date is the midpoint of the two timing clocks' centers. Each method rests on only 3–4 data points and assumes diminishing returns continue; high and low differ by about {t['optimistic'] / t['conservative']:.0f}× — that gap is the uncertainty. Recomputed daily; not a forecast or a price target.⟫</p>
+  </div>"""
 
 
 def _strategy(latest: dict) -> str:
@@ -593,6 +631,7 @@ def _strategy(latest: dict) -> str:
     </div>
     <p class="muted small" style="margin:8px 0 0">⟪對數刻度，起點 = 1。紫色色帶為警戒期間（進入警戒 → 賣出），淡色虛線為分批版。|Log scale; start = 1. Purple bands mark alert periods (alert → sale); the faint dashed line is the batch version.⟫</p>
   </div>
+  {_future(latest)}
   <div class="grid st-bottom">{perf}{trades}</div>
   {limits}"""
 
@@ -955,6 +994,7 @@ def render_page(latest: dict, hist: pd.DataFrame, ind: pd.DataFrame, path: Path,
         "__HERO_TOP__": _hero("top", latest, len(shown)),
         "__HERO_BOTTOM__": _hero("bottom", latest, 0),
         "__MIDTERM__": _midterm(latest),
+        "__SCN__": json.dumps({k: latest["scenarios"][k] for k in ("dates", "paths", "window", "top_date", "as_of")} if latest.get("scenarios") else {}),
         "__STRATEGY__": _strategy(latest),
         "__STRAT_TRADES__": json.dumps({**{k: [t["date"] for t in latest.get("strategy", {}).get("trades", []) if t["action"] == k] for k in ("sell", "buy")},
                                         # 各起點 1 月 1 日的精確基準（圖表資料一年前為每週一點）
@@ -1709,6 +1749,16 @@ table.data.fit.st-trades td:last-child{white-space:normal;overflow:visible;line-
   background:linear-gradient(90deg,color-mix(in srgb,var(--a1) 10%,transparent),transparent 70%)}
 .tide-note span{display:block;font:600 10.5px var(--mono);letter-spacing:.18em;color:var(--a1);margin-bottom:2px}
 @media (max-width:899px){.tide-note{font-size:15px}}
+
+.st-fut{margin-top:14px}
+.fut-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:4px 0 10px}
+.fut-kpis div{padding:12px 12px 10px 0}.fut-kpis div+div{padding-left:14px;border-left:1px solid var(--line)}
+.fut-kpis span{display:block;font:600 10.5px var(--mono);letter-spacing:.1em;color:var(--mut)}
+.fut-kpis b{display:block;font:900 clamp(28px,3vw,44px)/1.1 var(--disp);letter-spacing:-.03em;margin-top:4px}.fut-kpis b.d{font-size:clamp(22px,2.2vw,32px)}
+.fut-kpis em{display:block;font:500 11px var(--mono);font-style:normal;color:var(--mut);margin-top:2px}
+.fut-kpis .c b{color:var(--s-cold)}.fut-kpis .m b{color:var(--strat)}.fut-kpis .o b{color:var(--topline)}
+.fut-how{margin:10px 0 0;padding-left:18px;font-size:13px;color:var(--mut)}.fut-how li{margin:5px 0}.fut-how b{color:var(--fg);margin-right:8px}
+@media (max-width:899px){.fut-kpis{grid-template-columns:1fr 1fr}.fut-kpis div:nth-child(3){padding-left:0;border-left:0}.fut-kpis div:nth-child(n+3){border-top:1px solid var(--line)}}
 </style>
 </head>
 <body>
@@ -1842,7 +1892,7 @@ __STRATEGY__
   <h3>⟪中期狀態（「中期」分頁）|Market state (“Market” tab)⟫</h3>
   <p>⟪<b>趨勢環境</b>：價格相對 200 日均線、20 週均線（牛市支撐帶）、50 日均線，以及週線 Supertrend（ATR 10 × 3）的方向與支撐／壓力位。|<b>Trend</b>: price versus the 200-day MA, the 20-week MA (bull-market support band) and the 50-day MA, plus the weekly Supertrend (ATR 10 × 3) direction and its support/resistance level.⟫</p>
   <p>⟪<b>牛市回調觀察</b>：價格在 200 日均線之上時，日 RSI&lt;35、低於 50 日均線 10%、30 日跌逾 15%、恐懼貪婪&lt;25、資金費率 ≤0，五項符合三項即觸發。<b>短線過熱</b>為對應的五個相反條件。|<b>Dip watch</b>: with price above the 200-day MA, it triggers when 3 of 5 hold — daily RSI&lt;35, 10% below the 50-day MA, down 15%+ in 30 days, Fear &amp; Greed&lt;25, funding ≤0. <b>Overheating</b> uses the five opposite conditions.⟫</p>
-  <p>⟪研究結果：過熱不是可靠的賣訊號（單一指標過熱之後平均仍續漲，組合過熱之後好壞參半）；牛市回調有小幅優勢但次數少；Supertrend 屬確認型。這一區只幫助看清目前狀態，證據比頂部／底部訊號弱。|Findings: overheating is not a reliable sell signal (single overheated indicators were on average followed by further gains; combined overheating had mixed outcomes); bull-market dips showed a small edge with few occurrences; the Supertrend confirms rather than predicts. This section helps read the current state; its evidence is weaker than the top/bottom signals.⟫</p>
+  <p>⟪研究結果：過熱不是可靠的賣訊號（單一指標過熱之後平均仍續漲，組合過熱之後好壞參半）；牛市回調觀察與一般牛市日沒有可靠差異（2020 年後的觸發之後表現反而較差，早期優勢主要來自 2017 年兩次），僅作狀態參考；Supertrend 屬確認型。這一區只幫助看清目前狀態，證據比頂部／底部訊號弱。|Findings: overheating is not a reliable sell signal (single overheated indicators were on average followed by further gains; combined overheating had mixed outcomes); the bull-market dip watch shows no reliable difference from ordinary bull-market days (after 2020 its triggers did worse; the earlier edge came mostly from two 2017 cases) — a state reference only; the Supertrend confirms rather than predicts. This section helps read the current state; its evidence is weaker than the top/bottom signals.⟫</p>
   <h3>⟪週期策略（「週期策略」頁）|Cycle strategy (“Strategy” tab)⟫</h3>
   <p>⟪持有中，頂部訊號或頂部時機 ≥ 50 進入警戒，警戒中週線 Supertrend 轉空就賣出；空手時，底部訊號 ≥ 50 或 Supertrend 轉多就買回。頁面顯示目前狀態、逐輪回測（不偷看未來）的模擬資金曲線與歷史交易。|While holding, top signal or top timing ≥ 50 puts it on alert, and a weekly Supertrend down-turn on alert sells; in cash, bottom signal ≥ 50 or a Supertrend up-turn buys back. The tab shows the current state, a walk-forward (no look-ahead) simulated equity curve and past trades.⟫</p>
   <h3>⟪限制|Limitations⟫</h3><ul>
@@ -1854,12 +1904,12 @@ __STRATEGY__
 
 <script>
 document.documentElement.classList.add('js');
-const MID=__MID_EVENTS__,STR=__STRAT_TRADES__;
+const MID=__MID_EVENTS__,STR=__STRAT_TRADES__,SCN=__SCN__;
 const D=__DATA__,IND=__IND__,TOPS=__TOPS__,BOTTOMS=__BOTTOMS__,CUR_LOW=__CUR_LOW__,WIN=__WIN__,ALERT=__ALERT__;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const TS=D.d.map(d=>Date.parse(d));  /* 橫軸依實際日期（資料一年前每週一點、最近一年每日一點） */
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const st={strat:{years:2014,hover:null},mid:{years:2,hover:null},main:{years:0,hover:null,hide:new Set(),p:0},ind:{years:0,hover:null,k:null},mode:'top',modeApplied:null};
+const st={fut:{hover:null},strat:{years:2014,hover:null},mid:{years:2,hover:null},main:{years:0,hover:null,hide:new Set(),p:0},ind:{years:0,hover:null,k:null},mode:'top',modeApplied:null};
 function i0of(y){if(!y)return 0;const c=new Date(D.d[D.d.length-1]);c.setFullYear(c.getFullYear()-y);const s=c.toISOString().slice(0,10);return Math.max(0,D.d.findIndex(x=>x>=s));}
 function niceTicks(lo,hi){const span=hi-lo,step=10**Math.floor(Math.log10(span/3)),m=[1,2,5,10].find(k=>span/(k*step)<=5)*step,out=[];for(let v=Math.ceil(lo/m)*m;v<=hi;v+=m)out.push(+v.toFixed(10));return out;}
 function short(v){const a=Math.abs(v);return a>=1e6?(v/1e6)+'M':a>=1e3?(v/1e3)+'k':+v.toFixed(3)+'';}
@@ -1930,6 +1980,30 @@ function drawStrat(){const el=$('#c-strat');if(!el||!D.seq)return;const s=st.str
     marks:[{d:al.map(x=>x.from).filter(x=>x>=since),c:'--topline',dash:'5 3',op:.9},{d:STR.sell.filter(x=>x>=since),c:'--s-sig',dash:'2 4',op:.85},{d:STR.buy.filter(x=>x>=since),c:'--s-bot',dash:'2 4',op:.85}]});
   const j=i0+(s.hover==null?D.d.length-1-i0:s.hover),f=v=>v==null?'—':(v>=100?Math.round(v).toLocaleString():v.toFixed(2))+'×';
   $('#tip-strat').innerHTML=`<b>${D.d[j]}</b><span>⟪策略|Strategy⟫ <b>${f(a[j])}</b></span><span>⟪分批版|Batch⟫ <b>${f(c[j])}</b></span><span>⟪持有|Hold⟫ <b>${f(b[j])}</b></span>${al.some(x=>D.d[j]>=x.from&&(!x.to||D.d[j]<=x.to))?'<span class="tip-al">⟪警戒中|On alert⟫</span>':''}<span>${D.p[j]==null?'':'$'+Math.round(D.p[j]).toLocaleString()}</span>`;}
+/* 未來情境圖：2022 起的實際價格＋三條情境路徑（對數刻度、依日期） */
+function drawFut(){const el=$('#c-fut');if(!el||!SCN.dates)return;const W=el.clientWidth;if(!W)return;const H=chartH(300,.5);el.setAttribute('height',H);
+  const L=48,R=innerWidth>=900?96:62,T=14,B=24,DAY=864e5,hs=D.d.findIndex(x=>x>='2022-01-01');
+  const hist=D.d.slice(hs).map((d,i)=>[Date.parse(d),D.p[hs+i]]).filter(v=>v[1]!=null),fd=SCN.dates.map(Date.parse);
+  const K=[['conservative','--s-cold','⟪保守|Cons.⟫'],['base','--strat','⟪中間|Base⟫'],['optimistic','--topline','⟪樂觀|Opt.⟫']];
+  const t0=hist[0][0],t1=Date.parse(SCN.window.to)+60*DAY,vals=[...hist.map(v=>v[1]),...K.flatMap(k=>SCN.paths[k[0]])];
+  const lo=Math.log10(Math.min(...vals)*.85),hi=Math.log10(Math.max(...vals)*1.12);
+  const x=t=>L+(W-L-R)*(t-t0)/(t1-t0),y=v=>T+(H-T-B)*(1-(Math.log10(v)-lo)/(hi-lo)),grid=css('--line'),mut=css('--faint');
+  let g='';
+  [1e4,2e4,5e4,1e5,2e5,5e5,1e6].filter(v=>Math.log10(v)>=lo&&Math.log10(v)<=hi).forEach(v=>{g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${grid}"/><text x="${L-6}" y="${y(v)+4}" font-size="11" text-anchor="end" fill="${mut}">${v>=1e6?v/1e6+'M':v/1e3+'k'}</text>`;});
+  for(let yr=2022;yr<=new Date(t1).getUTCFullYear();yr++){const t=Date.UTC(yr,0,1);if(t>t0&&t<t1)g+=`<text x="${x(t)}" y="${H-6}" font-size="11" text-anchor="middle" fill="${mut}">${yr}</text>`;}
+  const wa=Date.parse(SCN.window.from),wb=Date.parse(SCN.window.to);
+  g+=`<rect x="${x(wa)}" y="${T}" width="${x(wb)-x(wa)}" height="${H-T-B}" fill="${css('--a3')}" opacity=".10"/><text x="${(x(wa)+x(wb))/2}" y="${H-B-6}" font-size="11" text-anchor="middle" fill="${mut}">⟪頂部窗口|Top window⟫</text>`;
+  const now=fd[0];g+=`<line x1="${x(now)}" x2="${x(now)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" stroke-dasharray="2 4" opacity=".4"/><text x="${x(now)+4}" y="${H-B-6}" font-size="11" fill="${mut}">⟪今天|Today⟫</text>`;
+  g+=`<path d="${hist.map((v,i)=>(i?'L':'M')+x(v[0]).toFixed(1)+','+y(v[1]).toFixed(1)).join('')}" fill="none" stroke="${css('--fg')}" stroke-width="1.6" stroke-linejoin="round"/>`;
+  K.forEach(([k,c,n])=>{const a=SCN.paths[k],e=a[a.length-1];g+=`<path d="${a.map((v,i)=>(i?'L':'M')+x(fd[i]).toFixed(1)+','+y(v).toFixed(1)).join('')}" fill="none" stroke="${css(c)}" stroke-width="2.2" stroke-dasharray="6 5" stroke-linecap="round"/>`;
+    g+=`<circle cx="${x(fd[fd.length-1])}" cy="${y(e)}" r="4" fill="${css(c)}"/><text x="${x(fd[fd.length-1])+8}" y="${y(e)+4}" font-size="11.5" font-weight="600" fill="${css(c)}">${n} $${Math.round(e/1e3)}k</text>`;});
+  const h=st.fut.hover;let tip;
+  if(h!=null){g+=`<line x1="${x(h)}" x2="${x(h)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" opacity=".3"/>`;
+    if(h<=now){const v=hist.reduce((a,b)=>Math.abs(b[0]-h)<Math.abs(a[0]-h)?b:a);tip=`<b>${new Date(v[0]).toISOString().slice(0,10)}</b><span>$${Math.round(v[1]).toLocaleString()}</span>`;}
+    else{let j=0;fd.forEach((t,i)=>{if(Math.abs(t-h)<Math.abs(fd[j]-h))j=i;});tip=`<b>${SCN.dates[j]}</b>`+K.map(([k,c,n])=>`<span>${n} <b>$${Math.round(SCN.paths[k][j]).toLocaleString()}</b></span>`).join('');
+      K.forEach(([k,c])=>{g+=`<circle cx="${x(fd[j])}" cy="${y(SCN.paths[k][j])}" r="4" fill="${css(c)}" stroke="${css('--surface')}" stroke-width="2"/>`;});}}
+  else tip=`<b>${SCN.top_date}</b><span>⟪滑過圖表看各情境路徑|Hover to read each path⟫</span>`;
+  el.innerHTML=g;$('#tip-fut').innerHTML=tip;el.dataset.l=L;el.dataset.r=R;el._x=[t0,t1];}
 function drawInd(){const s=st.ind,k=s.k;if(!k)return;const i0=i0of(s.years),v=D['v_'+k],sc=D['s_'+k],m=IND[k];
   chart($('#c-val'),i0,[{a:v,c:'--s-heat',w:1.8}],{hover:s.hover});
   if(sc)chart($('#c-sc'),i0,[{a:sc,c:k.startsWith('cold_')?'--s-cold':'--s-sig',w:1.8,fill:true}],{min:0,max:120,ticks:[0,40,80,120],axis:true,hover:s.hover});
@@ -2060,8 +2134,10 @@ function route(){const {mode,v,sub}=parseHash();st.mode=mode;
     requestAnimationFrame(()=>{const c=$('#sec-history'),r=c.getBoundingClientRect();if(r.top<innerHeight*.85&&r.bottom>0){st.main.played=true;animMain();}});}
   if(sub){const el=document.getElementById((mode==='bottom'?'grp-':'cat-')+sub);if(el){el.open=true;setTimeout(()=>{const y=el.getBoundingClientRect().top+scrollY-hdr()-16;scrollTo({top:y,behavior:'smooth'});},30);}}else scrollTo(0,0);
   redraw();}
-function redraw(){const {v}=parseHash();if(v==='overview')drawMain();if(v==='mid')drawMid();if(v==='strat')drawStrat();if(st.ind.k)drawInd();}
-bind([$('#c-main')],'main',()=>i0of(st.main.years),drawMain);bind([$('#c-mid')],'mid',()=>i0of(st.mid.years),drawMid);bind([$('#c-strat')],'strat',()=>Math.max(0,D.d.findIndex(x=>x>=st.strat.years+'-01-01')),drawStrat);bindSeg();
+function redraw(){const {v}=parseHash();if(v==='overview')drawMain();if(v==='mid')drawMid();if(v==='strat'){drawStrat();drawFut();}if(st.ind.k)drawInd();}
+bind([$('#c-main')],'main',()=>i0of(st.main.years),drawMain);bind([$('#c-mid')],'mid',()=>i0of(st.mid.years),drawMid);(()=>{const el=$('#c-fut');if(!el)return;const mv=ev=>{const r=el.getBoundingClientRect(),cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left,L=+el.dataset.l,R=+el.dataset.r,[t0,t1]=el._x||[0,1];
+  st.fut.hover=t0+Math.max(0,Math.min(1,(cx-L)/(el.clientWidth-L-R)))*(t1-t0);drawFut();};el.onmousemove=mv;el.ontouchmove=mv;el.ontouchstart=mv;el.onmouseleave=()=>{st.fut.hover=null;drawFut();};})();
+bind([$('#c-strat')],'strat',()=>Math.max(0,D.d.findIndex(x=>x>=st.strat.years+'-01-01')),drawStrat);bindSeg();
 addEventListener('hashchange',route);addEventListener('resize',redraw);matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redraw);
 initStars();route();if(!RM)requestAnimationFrame(frame);
 </script>

@@ -17,6 +17,7 @@ import pandas as pd
 from btc_top import sources
 from btc_top.midterm import compute_midterm
 from btc_top.strategy import compute_strategy, projected_arm
+from btc_top.scenarios import compute_scenarios
 from btc_top.page import render_page
 from btc_top.scoring import (BOTTOM_STRONG, BOTTOM_WINDOW, CATEGORIES, COLD_GROUP_LABEL, COLD_INDICATORS,
                              COLD_WEIGHTS, HALVINGS, SIGNAL_ALERT, SIGNAL_WINDOW, TIMING_FLAT, TIMING_RAMP,
@@ -326,6 +327,10 @@ def main():
         },
         "disclaimer": "僅供參考，不構成投資建議。",
     }
+    try:  # 未來情境只是參考，計算失敗不可讓整個流程失敗
+        latest["scenarios"] = compute_scenarios(ind, timing, today)
+    except Exception as e:  # noqa: BLE001
+        print("未來情境計算失敗：", e)
     strat_info["projected_arm"] = projected_arm(timing, today) if strat_info["state"] == "holding" and not strat_info["armed"] else None
     DOCS.mkdir(parents=True, exist_ok=True)
     (DOCS / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2))
