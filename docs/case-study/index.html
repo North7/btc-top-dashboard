@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Tidemark 比特幣週期訊號產品的 PM 作品集案例：產品定義、決策與取捨、假設驗證、迭代、週期策略、介面、營運與架構。">
+<meta property="og:type" content="article"><meta property="og:title" content="Tidemark 作品集｜產品經理 0→1 數據產品">
+<meta property="og:description" content="從問題定義、假設驗證到上線營運，獨立完成一個每天自動更新的比特幣週期數據產品。">
+<meta property="og:image" content="https://north7.github.io/tidemark/case-study/img/hero.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%2320e3b2'/%3E%3Cpath d='M6 18.5c2.6 0 2.6-7 5.2-7s2.6 7 5.2 7 2.6-7 5.2-7 2.6 7 4.4 7' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>body{margin:0}</style>
+<title>Tidemark 作品集</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<style>
+/* 版面：單欄長文案例研究（最寬 1120px），重點圖片可放寬到 1280px；章節依產品實際的開發順序排列 */
+:root{
+  --bg:#03040a;--surface:#0d0f1a;--surface2:#151827;--line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16);
+  --fg:#eef0fb;--mut:#a3a9c6;--faint:#6f7694;
+  --top:#ff4d6d;--top2:#c03cff;--bot:#20e3b2;--bot2:#2aa8ff;--mid:#7c8cff;--strat:#f5b84c;
+  --disp:"Archivo","Noto Sans TC",-apple-system,"PingFang TC",sans-serif;
+  --body:"Noto Sans TC",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  --bg:#f3f4f9;--surface:#ffffff;--surface2:#eceef6;--line:rgba(20,24,60,.10);--line2:rgba(20,24,60,.18);
+  --fg:#0f1226;--mut:#4d5472;--faint:#7b8199;--top:#d6304f;--top2:#8f2bd1;--bot:#0c9e7a;--bot2:#1d84d0;--mid:#4f5bd5;--strat:#b97b0c;color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#f3f4f9;--surface:#ffffff;--surface2:#eceef6;--line:rgba(20,24,60,.10);--line2:rgba(20,24,60,.18);
+  --fg:#0f1226;--mut:#4d5472;--faint:#7b8199;--top:#d6304f;--top2:#8f2bd1;--bot:#0c9e7a;--bot2:#1d84d0;--mid:#4f5bd5;--strat:#b97b0c;color-scheme:light}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.75 var(--body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:0 96px}
+img{display:block;max-width:100%;height:auto;border-radius:14px;border:1px solid var(--line)}
+a{color:var(--bot2)}
+h1,h2,h3{font-family:var(--disp);text-wrap:balance;margin:0}
+p{margin:0}
+.mono,.lbl{font-family:var(--mono)}
+.lbl{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
+
+/* 頂部 */
+header.hero{padding-block:clamp(48px,9vw,110px) 40px;display:grid;gap:22px;position:relative}
+header.hero::before{content:"";position:absolute;inset:-40px calc(50% - 50vw) auto;height:520px;z-index:-1;pointer-events:none;
+  background:radial-gradient(40% 70% at 15% 20%,color-mix(in srgb,var(--bot) 26%,transparent),transparent 70%),
+             radial-gradient(40% 70% at 70% 0%,color-mix(in srgb,var(--top2) 22%,transparent),transparent 70%);filter:blur(10px)}
+.brand{display:flex;align-items:center;gap:12px;font:800 20px var(--disp)}
+.brand svg{width:40px;height:40px;border-radius:11px}
+header h1{font-size:clamp(44px,8vw,96px);font-weight:900;letter-spacing:-.04em;line-height:1.02}
+header h1 em{font-style:normal;background:linear-gradient(90deg,var(--bot),var(--bot2) 45%,var(--top2) 75%,var(--top));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{font-size:clamp(17px,1.6vw,20px);color:var(--mut);max-width:62ch}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);margin-top:10px}
+.meta div{padding:14px 16px 14px 0;display:grid;gap:2px}
+.meta div+div{padding-left:16px;border-left:1px solid var(--line)}
+.meta b{font-weight:600;font-size:15px}
+.cover{margin-inline:calc(-1 * clamp(0px,4vw,80px))}
+.links{display:flex;flex-wrap:wrap;gap:10px}
+.links a{font:600 13px var(--mono);text-decoration:none;color:var(--fg);padding:9px 16px;border-radius:999px;border:1px solid var(--line2)}
+.links a:hover,.links a:focus-visible{border-color:var(--bot);outline:none}
+
+/* 目錄 */
+nav.toc{display:flex;flex-wrap:wrap;gap:6px 18px;padding-block:18px;border-bottom:1px solid var(--line);font-size:14px}
+nav.toc a{color:var(--mut);text-decoration:none}nav.toc a:hover{color:var(--fg)}
+
+/* 章節 */
+section{padding-block:72px 8px;display:grid;gap:22px;scroll-margin-top:20px}
+section>header{display:grid;gap:8px}
+section h2{font-size:clamp(30px,4.2vw,48px);font-weight:900;letter-spacing:-.03em;line-height:1.1}
+section h3{font-size:20px;font-weight:800;letter-spacing:-.01em}
+.prose{display:grid;gap:14px;max-width:68ch}
+.prose p{color:var(--fg)}
+.muted{color:var(--mut)}
+.cols{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.cols>*{min-width:0}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px;display:grid;gap:8px;align-content:start}
+.box p{color:var(--mut);font-size:15px}
+.box .k{font:900 34px/1 var(--disp);letter-spacing:-.03em}
+
+/* 數字列 */
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border-top:1px solid var(--line2);border-bottom:1px solid var(--line2)}
+.figs div{padding:18px 14px 16px 0;display:grid;gap:4px}
+.figs div+div{padding-left:16px;border-left:1px solid var(--line)}
+.figs b{font:900 clamp(34px,4vw,48px)/1 var(--disp);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.figs span{font-size:13px;color:var(--mut)}
+
+/* 公式 */
+.formula{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.formula .f{border-radius:16px;padding:22px;border:1px solid var(--line2);display:grid;gap:10px}
+.f.top{background:linear-gradient(135deg,color-mix(in srgb,var(--top) 14%,var(--surface)),var(--surface))}
+.f.bot{background:linear-gradient(135deg,color-mix(in srgb,var(--bot) 14%,var(--surface)),var(--surface))}
+.f .eq{font:800 clamp(22px,2.6vw,30px)/1.2 var(--disp);letter-spacing:-.02em}
+.f.top .eq b{color:var(--top)}.f.bot .eq b{color:var(--bot)}
+.f ul{margin:0;padding-left:18px;color:var(--mut);font-size:15px;display:grid;gap:4px}
+
+/* 表格 */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 12px var(--mono);letter-spacing:.06em;color:var(--mut);background:var(--surface2);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font:700 11px var(--mono);padding:2px 8px;border-radius:6px;white-space:nowrap}
+.tag.y{color:var(--bot);background:color-mix(in srgb,var(--bot) 14%,transparent)}
+.tag.n{color:var(--top);background:color-mix(in srgb,var(--top) 14%,transparent)}
+.tag.r{color:var(--mid);background:color-mix(in srgb,var(--mid) 16%,transparent)}
+
+/* 圖 */
+figure{margin:0;display:grid;gap:10px}
+figcaption{font-size:13.5px;color:var(--mut)}
+figcaption b{color:var(--fg);font-weight:600}
+.wide{margin-inline:calc(-1 * clamp(0px,3vw,80px))}
+.g2{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.g2>*{min-width:0}
+.g4{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.phones{display:grid;gap:18px;grid-template-columns:repeat(3,minmax(0,1fr));max-width:820px}
+.phones img{border-radius:22px}
+@media (max-width:560px){.phones{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.swatches{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.sw{border-radius:14px;padding:16px;border:1px solid var(--line);display:grid;gap:4px;font-size:14px}
+.sw i{display:block;height:44px;border-radius:9px;margin-bottom:6px}
+.sw b{font-weight:700}.sw span{color:var(--mut);font-size:13px}
+
+/* 架構圖 */
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;overflow-x:auto}
+.diagram pre.mermaid{margin:0;background:transparent;text-align:center;min-width:640px}
+
+/* 時間線 */
+ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:0;border-left:2px solid var(--line2)}
+ol.steps li{position:relative;padding:0 0 22px 22px;display:grid;gap:4px}
+ol.steps li::before{content:"";position:absolute;left:-7px;top:7px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--bot)}
+ol.steps b{font-weight:700}
+ol.steps span{color:var(--mut);font-size:15px}
+
+ul.list{margin:0;padding-left:20px;display:grid;gap:6px}
+.brief{display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:760px){.brief{grid-template-columns:1fr 1fr}}
+.brief .box.full{grid-column:1/-1}
+.box .lbl{margin-bottom:2px}
+.box ul{margin:0;padding-left:20px;color:var(--fg);font-size:15px;display:grid;gap:4px}
+.iters{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.it{border-top:3px solid var(--c);background:var(--surface);border-radius:0 0 14px 14px;padding:16px 18px;display:grid;gap:6px;align-content:start}
+.it .v{font:600 12px var(--mono);letter-spacing:.08em;color:var(--mut)}
+.it b{font:800 19px/1.3 var(--disp)}
+.it p{color:var(--mut);font-size:14.5px}
+.it .why{color:var(--fg);font-size:14px;border-top:1px dashed var(--line2);padding-top:8px;margin-top:2px}
+.rm{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.rm .box h3{font-size:18px}
+.role{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(118px,1fr))}
+.role span{font-size:14.5px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+ol.num{margin:0;padding-left:22px;display:grid;gap:8px;max-width:68ch}
+ol.num b{font-weight:700}
+footer{margin-top:80px;padding-top:28px;border-top:1px solid var(--line);display:grid;gap:8px;color:var(--mut);font-size:14px}
+:focus-visible{outline:2px solid var(--bot);outline-offset:3px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#20e3b2"/><stop offset="1" stop-color="#2aa8ff"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#lg)"/><path d="M6 18.5c2.6 0 2.6-7 5.2-7s2.6 7 5.2 7 2.6-7 5.2-7 2.6 7 4.4 7" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11.2" cy="11.5" r="1.6" fill="#fff"/></svg>Tidemark</div>
+  <div class="lbl">作品集 · 產品經理 · 0→1 數據產品</div>
+  <h1>讀懂比特幣的<em>潮汐</em></h1>
+  <p class="lede">從問題定義、假設驗證到上線營運，獨立完成一個每天自動更新的數據產品：把 17 項公開指標與減半週期，濃縮成「頂部訊號」與「底部訊號」兩個可行動的數字，並附上經逐輪回測的週期策略。</p>
+  <div class="meta">
+    <div><span class="lbl">角色</span><b>產品經理（獨立專案）</b></div>
+    <div><span class="lbl">期間</span><b>2026 年 10 月・8 次迭代</b></div>
+    <div><span class="lbl">狀態</span><b>已上線・每日自動更新</b></div>
+    <div><span class="lbl">實作</span><b>AI 協作（Claude Code）</b></div>
+  </div>
+  <div class="links">
+    <a href="https://north7.github.io/tidemark/">線上網站</a>
+    <a href="https://github.com/North7/tidemark">原始碼與方法說明</a>
+    <a href="https://north7.github.io/tidemark/latest.json">每日數據 JSON</a>
+  </div>
+</header>
+
+<figure class="cover"><img src="img/hero.jpg" alt="Tidemark 宣傳主視覺：筆電顯示底部訊號總覽，兩支手機分別顯示週期策略與未來情境" width="2400" height="1500"></figure>
+
+<nav class="toc" aria-label="目錄">
+  <a href="#overview">概述</a><a href="#brief">產品定義</a><a href="#decisions">決策與取捨</a><a href="#research">假設驗證</a><a href="#model">訊號模型</a>
+  <a href="#iterations">迭代</a><a href="#strategy">週期策略</a><a href="#ui">介面</a><a href="#design">設計</a><a href="#arch">營運與架構</a><a href="#metrics">指標與風險</a><a href="#roadmap">路線圖</a><a href="#learn">反思</a>
+</nav>
+
+<section id="overview">
+  <header><div class="lbl">Overview</div><h2>專案概述</h2></header>
+  <div class="figs">
+    <div><b>8</b><span>次迭代・0 → 1 上線</span></div>
+    <div><b>17</b><span>項計分指標・15 年數據</span></div>
+    <div><b>48</b><span>個候選指標評估</span></div>
+    <div><b>700+</b><span>次回測驗證</span></div>
+    <div><b>0</b><span>付費資料源・後端伺服器</span></div>
+  </div>
+  <div class="prose"><p><b>我負責的範圍</b>：實作以 AI 協作工具完成，我扮演需求方、決策者與驗收者。</p></div>
+  <div class="role">
+    <span>問題定義</span><span>目標與成功標準</span><span>範疇與優先順序</span><span>研究與驗證設計</span>
+    <span>關鍵決策與取捨</span><span>資訊架構</span><span>體驗方向</span><span>上線監控與迭代</span>
+  </div>
+</section>
+
+<section id="brief">
+  <header><div class="lbl">Product brief</div><h2>產品定義：一頁說清楚</h2></header>
+  <div class="brief">
+    <div class="box"><span class="lbl" style="color:var(--top)">問題</span><p>經典鏈上指標每輪頂部讀數都在下降（MVRV 4.7 → 4.4 → 2.9 → 2.3），固定門檻越來越晚觸發；中段高點又比真頂部更熱，只看「熱不熱」會在錯的時間發出警報。</p></div>
+    <div class="box"><span class="lbl" style="color:var(--bot)">目標使用者</span><p>長期持有比特幣、想知道週期走到哪裡的人；以及每天需要讀取數據寫日報的自動化流程（JSON 介面）。</p></div>
+    <div class="box"><span class="lbl" style="color:var(--strat)">核心假設</span><p>頂部 = 數據夠極端 × 時間進入歷史窗口。兩者同時成立才發訊號，可以排除中段高點的誤報。</p></div>
+    <div class="box"><span class="lbl" style="color:var(--mid)">成功標準</span><ul><li>最近三次頂部都是該輪訊號最高點</li><li>假底部零誤報</li><li>每日自動更新，零人工維護</li></ul></div>
+    <div class="box full"><span class="lbl">不做什麼（Non-goals）</span><p>不接交易功能・不存任何個人持倉・第一版不用付費數據・不提供價格預測或機率</p></div>
+  </div>
+  <div class="prose"><p class="muted">我把問題重新定義為「熱度與時間是否同時到位」，而不是「熱不熱」，並先寫下成功標準與不做的事，作為之後每個決策的依據。</p></div>
+</section>
+
+<section id="decisions">
+  <header><div class="lbl">Decision log</div><h2>關鍵決策與取捨</h2></header>
+  <div class="tw"><table>
+    <thead><tr><th>決策點</th><th>考慮過的選項</th><th>選擇</th><th>理由與代價</th></tr></thead>
+    <tbody>
+      <tr><td>訊號結構</td><td>只看熱度／熱度 × 時機</td><td><b>熱度 × 時機</b></td><td>只看熱度時中段高點比真頂部熱；代價是依賴四年週期延續，已列為已知限制</td></tr>
+      <tr><td>持有者行為數據</td><td>付費 CryptoQuant／免費 4 年數據／不納入</td><td><b>不納入</b></td><td>只有 4 年歷史無法跨週期驗證，試算讓頂部訊號變差，且授權禁止公開</td></tr>
+      <tr><td>中期功能形式</td><td>精準買賣訊號／狀態參考面板</td><td><b>參考面板</b></td><td>48 個指標研究顯示中期轉折沒有可靠指標，不做會誤導的訊號</td></tr>
+      <tr><td>策略績效呈現</td><td>只放回測／加上定案後追蹤</td><td><b>定案日＋實際追蹤</b></td><td>規則是看過歷史才挑的；設定定案日，讓產品接受未來數據檢驗</td></tr>
+      <tr><td>未來情境</td><td>單一預測線／三情境＋機率／三情境無機率</td><td><b>三情境、不給機率</b></td><td>樣本只有 3–4 次週期，機率會製造虛假的精確感</td></tr>
+      <tr><td>每日排程</td><td>GitHub 排程／外部定時觸發</td><td><b>外部觸發＋備援</b></td><td>實測 GitHub 排程延遲約 5 小時，日報會讀到舊數據</td></tr>
+      <tr><td>資訊架構</td><td>中期放第 2 頁／獨立按鈕</td><td><b>獨立按鈕</b></td><td>01–04 都是頂底相關頁，中期不屬於頂底，混在中間會造成誤解</td></tr>
+    </tbody></table></div>
+  <div class="prose"><p class="muted">我選擇少一個功能，而不是多一個不可靠的功能；依證據強度調整功能承諾，也是產品決策的一部分。</p></div>
+</section>
+
+<section id="research">
+  <header><div class="lbl">Research</div><h2>假設驗證：先驗證，通過才上線</h2></header>
+  <div class="prose">
+    <p>我為產品訂了一條規則：任何新指標都要先用歷史頂部、底部與「假訊號」（中段高點、中段回調）檢驗，通過才上線。一共評估 48 個候選指標、約 10 種策略設計、700 多次回測。</p>
+    <p>後期把流程改成<b>事先固定候選與參數再測試</b>，避免看過結果才挑規則。大多數結論是「沒用」，這些負面結果和成功的一樣公開在產品說明裡。</p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>測試內容</th><th>結果</th><th>決定</th></tr></thead>
+    <tbody>
+      <tr><td>48 個免費指標的中期轉折辨識（2014–19 觀察、2020–26 檢驗）</td><td>沒有指標能把最終頂部排在中段高點之上</td><td><span class="tag y">保留現有結構</span></td></tr>
+      <tr><td>Power Law 冪律趨勢價倍數</td><td>三次底部 0.24–0.48 倍、假底部無誤報；頂部倍數逐輪急降</td><td><span class="tag y">加入底部</span></td></tr>
+      <tr><td>Pi Cycle Top</td><td>最近兩次頂部讀數與 2019 假頂相同</td><td><span class="tag n">不採用</span></td></tr>
+      <tr><td>交易所淨流入</td><td>2021、2025 頂部為 0，資金改走 ETF 與託管</td><td><span class="tag n">移除</span></td></tr>
+      <tr><td>長期持有者 SOPR、CDD（免費 4 年數據）</td><td>2024-03 假頂 100 分、2025 真頂 48 分，讓頂部訊號變差</td><td><span class="tag n">不採用</span></td></tr>
+      <tr><td>Delta Price</td><td>真假底部分得開，但與 MVRV 相關 0.67，加入後分辨力略降</td><td><span class="tag r">只作參考</span></td></tr>
+      <tr><td>牛市內避開回調（7 種趨勢濾網）</td><td>三次牛市全部輸給持有</td><td><span class="tag n">不採用</span></td></tr>
+      <tr><td>回調加碼短線（4 種出場方式）</td><td>2020 年後全部輸給任意日進場</td><td><span class="tag n">不採用</span></td></tr>
+    </tbody></table></div>
+</section>
+
+<section id="model">
+  <header><div class="lbl">Signal model</div><h2>訊號模型：數據 × 時鐘</h2></header>
+  <div class="formula">
+    <div class="f top"><div class="lbl">Top signal</div><div class="eq"><b>頂部訊號</b> = 熱度 × 時機</div>
+      <ul><li>熱度：鏈上估值 44%、資金流 25%、槓桿 19%、情緒 12%</li><li>時機：距減半天數、距本輪低點天數，對照過去三次頂部</li><li>≥ 50 頂部窗口、≥ 70 高度警戒</li></ul></div>
+    <div class="f bot"><div class="lbl">Bottom signal</div><div class="eq"><b>底部訊號</b> = 冷度 × 底部時機</div>
+      <ul><li>冷度：估值 50%、礦工 30%、價格結構 20%</li><li>底部時機：距上次頂部、距上次減半，對照過去三次底部</li><li>≥ 50 底部區、≥ 70 強烈底部</li></ul></div>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>類別</th><th>指標</th><th>計分方式</th></tr></thead>
+    <tbody>
+      <tr><td>鏈上估值</td><td>MVRV Z-score、NUPL、Puell Multiple、實現價格倍數</td><td>週期法：以過去四次頂部擬合遞減趨勢，推估本輪預期頂部</td></tr>
+      <tr><td>資金流與機構</td><td>ETF 30 日淨流入、ETF 流入動能、穩定幣 90 日增速、Coinbase 溢價</td><td>4 年滾動百分位（歷史不足三輪）</td></tr>
+      <tr><td>槓桿與衍生品</td><td>資金費率 7 日均、未平倉量／市值、期現基差</td><td>4 年滾動百分位</td></tr>
+      <tr><td>情緒</td><td>恐懼貪婪指數 7 日均</td><td>4 年滾動百分位</td></tr>
+      <tr><td>冷度（底部）</td><td>MVRV、NUPL、Puell、Hash Ribbons、AHR999、Power Law</td><td>以過去三次底部擬合本輪預期底部；Hash Ribbons 依投降深度</td></tr>
+    </tbody></table></div>
+  <p class="muted" style="max-width:68ch">同一類指標先平均再按權重加總，避免高度相關的指標重複計分；百分位 35 以下記 0 分，避免平常狀態被算成「半熱」。</p>
+  <div class="diagram"><pre class="mermaid">
+flowchart LR
+  subgraph D[公開數據]
+    CM[Coin Metrics 鏈上]
+    ETF[TFTC ETF 資金流]
+    DL[DefiLlama 穩定幣]
+    EX[OKX・Binance・Coinbase 衍生品]
+    FG[恐懼貪婪]
+    BS[Bitstamp 日 K]
+  end
+  D --> IND[17 項指標]
+  IND --> H[熱度 0–100]
+  IND --> C[冷度 0–100]
+  CLK[減半與週期時鐘] --> T[時機]
+  CLK --> BT[底部時機]
+  H --> TS{{頂部訊號}}
+  T --> TS
+  C --> BSG{{底部訊號}}
+  BT --> BSG
+  TS --> ST[週期策略]
+  BSG --> ST
+  BS --> SUP[週線 Supertrend] --> ST
+</pre></div>
+</section>
+
+<section id="iterations">
+  <header><div class="lbl">Iterations</div><h2>迭代：每一版都回應一個具體問題</h2></header>
+  <div class="iters">
+    <div class="it" style="--c:var(--mid)"><span class="v">V1・MVP</span><b>熱度分數上線</b><p>4 類指標加權，每日自動更新與 JSON 介面</p><p class="why">發現：分數每年都會「鈍化」</p></div>
+    <div class="it" style="--c:var(--top)"><span class="v">V2・模型</span><b>熱度 × 時機</b><p>加入減半與低點兩個時鐘</p><p class="why">結果：三輪最終頂部都成為該輪最高</p></div>
+    <div class="it" style="--c:var(--bot)"><span class="v">V3・範疇擴充</span><b>底部訊號</b><p>冷度 × 底部時機，週期結構驗證</p><p class="why">回應：驗證 ETF 時代熊市是否變淺</p></div>
+    <div class="it" style="--c:var(--bot2)"><span class="v">V4・體驗</span><b>品牌與改版</b><p>品牌、雙語、四套視覺提案收斂成「極光潮汐」</p><p class="why">回應：資訊太密、不好讀</p></div>
+    <div class="it" style="--c:var(--mid)"><span class="v">V5・研究</span><b>中期狀態</b><p>48 指標研究後做成參考面板</p><p class="why">決策：證據弱，不做成訊號</p></div>
+    <div class="it" style="--c:var(--strat)"><span class="v">V6・價值</span><b>週期策略與情境</b><p>逐輪回測、模擬資金曲線、三種未來情境</p><p class="why">回應：從「看懂」走到「怎麼做」</p></div>
+    <div class="it" style="--c:var(--bot)"><span class="v">V7・營運</span><b>可靠性與監控</b><p>自動檢查、事件通知、流量統計、定案後追蹤</p><p class="why">回應：無人值守也不出錯</p></div>
+    <div class="it" style="--c:var(--top)"><span class="v">V8・優化</span><b>互動細節</b><p>潮汐筆記、手機長按、分享卡、時機說明</p><p class="why">回應：使用回饋與走查</p></div>
+  </div>
+</section>
+
+<section id="strategy">
+  <header><div class="lbl">Strategy</div><h2>週期策略：警戒 + 趨勢確認</h2></header>
+  <div class="cols">
+    <div class="box"><span class="lbl" style="color:var(--strat)">警戒</span><p>持有中，頂部訊號或頂部時機 ≥ 50，進入警戒並保持到賣出。</p></div>
+    <div class="box"><span class="lbl" style="color:var(--top)">賣出</span><p>警戒中，週線 Supertrend（ATR 10 × 3）由多轉空，全部賣出。</p></div>
+    <div class="box"><span class="lbl" style="color:var(--bot)">買回</span><p>空手時，底部訊號 ≥ 50 或週線 Supertrend 轉多，全部買回。</p></div>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>起點</th><th>策略</th><th>持有</th><th>策略 ÷ 持有</th><th>策略最大回撤</th><th>持有最大回撤</th></tr></thead>
+    <tbody>
+      <tr><td class="n">2014</td><td class="n">857×</td><td class="n">114×</td><td class="n">7.5×</td><td class="n">−74%</td><td class="n">−84%</td></tr>
+      <tr><td class="n">2018</td><td class="n">20.8×</td><td class="n">6.4×</td><td class="n">3.3×</td><td class="n">−71%</td><td class="n">−81%</td></tr>
+      <tr><td class="n">2022</td><td class="n">5.5×</td><td class="n">1.8×</td><td class="n">3.1×</td><td class="n">−35%</td><td class="n">−67%</td></tr>
+    </tbody></table></div>
+  <div class="prose"><h3>讓產品接受未來的檢驗</h3></div>
+  <ol class="num">
+    <li><b>逐輪回測</b>：每一輪只用當時已知的資料設定參數，不偷看未來。</li>
+    <li><b>敏感度測試</b>：門檻在 40–60 之間的 27 種組合全部勝過持有，證明不是剛好挑中的參數。</li>
+    <li><b>設定定案日（2026-10-06）</b>：規則從此凍結，之後的績效分開顯示；保守、中間、樂觀三種未來情境也同時凍結，用真實數據逐日比對。</li>
+  </ol>
+</section>
+
+
+
+<section id="ui">
+  <header><div class="lbl">Interface</div><h2>介面</h2></header>
+  <figure class="wide"><img src="img/overview.jpg" alt="總覽頁首屏：底部訊號 22 的液態大數字、潮汐筆記、冷度刻度尺" loading="lazy"><figcaption><b>總覽</b>・資訊架構依「使用者要回答的問題」分層：01–04 是頂底相關頁面，中期狀態與週期策略用獨立按鈕區隔。預設首頁顯示底部訊號，因為當下最重要的問題是本輪底部是否成立。</figcaption></figure>
+  <div class="g2">
+    <figure><img src="img/strategy.jpg" alt="週期策略頁：持有中、倉位 100%、最近一次操作" loading="lazy"><figcaption><b>週期策略</b>・倉位、是否警戒、最近一次操作與下一步條件。</figcaption></figure>
+    <figure><img src="img/scenarios.jpg" alt="未來情境圖：保守、中間、樂觀三條路徑" loading="lazy"><figcaption><b>未來情境</b>・三條歷史規律外推的路徑，明確標示不是預測。</figcaption></figure>
+    <figure><img src="img/timing.jpg" alt="時機頁：兩個時鐘的時間軸與窗口" loading="lazy"><figcaption><b>時機</b>・兩個時鐘標出過去頂底、滿分窗口與今天的位置，點選可看說明。</figcaption></figure>
+    <figure><img src="img/midterm.jpg" alt="中期狀態頁：趨勢環境、牛市回調觀察、短線過熱" loading="lazy"><figcaption><b>中期狀態</b>・趨勢環境與條件清單，附歷史統計，標示證據較弱。</figcaption></figure>
+    <figure><img src="img/heat.jpg" alt="熱度頁：各類別與指標卡片" loading="lazy"><figcaption><b>熱度</b>・寬螢幕全寬排版，每張指標卡可點開看完整歷史。</figcaption></figure>
+    <figure><img src="img/strategy-light.jpg" alt="淺色模式的週期策略頁" loading="lazy"><figcaption><b>淺色模式</b>・預設深色，可切換淺色或跟隨系統。</figcaption></figure>
+  </div>
+  <div class="phones">
+    <figure><img src="img/m-overview.jpg" alt="手機版總覽" loading="lazy"><figcaption><b>手機・總覽</b>・往下捲時頁首收起、圖表長按才顯示數值</figcaption></figure>
+    <figure><img src="img/m-strategy.jpg" alt="手機版週期策略" loading="lazy"><figcaption><b>手機・週期策略</b></figcaption></figure>
+    <figure><img src="img/m-scenarios.jpg" alt="手機版未來情境" loading="lazy"><figcaption><b>手機・未來情境</b></figcaption></figure>
+  </div>
+</section>
+
+<section id="design">
+  <header><div class="lbl">Design</div><h2>設計：從四個方向收斂成「極光潮汐」</h2></header>
+  <div class="prose"><p>先做四套可互動的視覺提案，讓使用者實際操作後選擇偏好，再組合成最終方向：潮汐的動態波浪與刻度尺、極光的色調與氛圍、瑞士風的巨大數字與資訊秩序。四種模式各有專屬色彩，一眼就知道自己在看哪一類資訊。</p></div>
+  <div class="g4">
+    <figure><img src="img/explore-a.jpg" alt="方向 A 潮汐" loading="lazy"><figcaption><b>A 潮汐</b>・波浪與刻度尺</figcaption></figure>
+    <figure><img src="img/explore-b.jpg" alt="方向 B 瑞士" loading="lazy"><figcaption><b>B 瑞士</b>・巨大數字、網格秩序</figcaption></figure>
+    <figure><img src="img/explore-c.jpg" alt="方向 C 極光" loading="lazy"><figcaption><b>C 極光</b>・色調與氛圍</figcaption></figure>
+    <figure><img src="img/explore-d.jpg" alt="方向 D 極光潮汐" loading="lazy"><figcaption><b>D 極光潮汐</b>・最終採用的組合</figcaption></figure>
+  </div>
+  <div class="cols">
+    <div class="box"><h3>液態大數字</h3><p>訊號分數用空心巨大數字呈現，裡面的「潮水」依分數漲到對應高度並持續晃動。</p></div>
+    <div class="box"><h3>頂底不同的動態</h3><p>頂部模式是湍急的漲潮浪；底部模式是低緩的深海湧浪，加上從海底往上浮的氣泡。</p></div>
+    <div class="box"><h3>潮汐筆記</h3><p>依當天數據自動挑選句型，用一句話說明今天的狀態，只描述數據，不做預測。</p></div>
+  </div>
+  <div class="swatches" aria-label="色彩系統">
+    <div class="sw"><i style="background:linear-gradient(135deg,var(--bot),var(--bot2))"></i><b>底部模式</b><span>綠 → 藍・預設首頁</span></div>
+    <div class="sw"><i style="background:linear-gradient(135deg,var(--top),var(--top2))"></i><b>頂部模式</b><span>紅 → 紫</span></div>
+    <div class="sw"><i style="background:linear-gradient(135deg,var(--mid),var(--bot2))"></i><b>中期狀態</b><span>中性藍紫，不屬頂底</span></div>
+    <div class="sw"><i style="background:linear-gradient(135deg,var(--strat),#ff7a45)"></i><b>週期策略</b><span>金 → 橘</span></div>
+  </div>
+</section>
+
+<section id="arch">
+  <header><div class="lbl">Architecture</div><h2>營運與架構：無人值守也不出錯</h2></header>
+  <div class="diagram"><pre class="mermaid">
+flowchart TB
+  CRON[cron-job.org<br/>每天 UTC 00:15] --> GA[GitHub Actions]
+  SCHED[GitHub 排程<br/>備援，已更新就略過] -.-> GA
+  GA --> RUN[run.py]
+  RUN --> SRC[sources.py<br/>抓取 8 個公開資料源<br/>失敗時沿用舊資料並標記 stale]
+  SRC --> SCO[scoring.py 熱度・冷度・時機]
+  SCO --> STR[strategy.py 逐輪回測]
+  SCO --> SCN[scenarios.py 三種情境]
+  SCO --> MID[midterm.py 中期狀態]
+  STR & SCN & MID --> OUT[latest.json・中英文頁面・og.png・CSV]
+  OUT --> CHK{checks.py 自動檢查}
+  CHK -- 通過 --> GIT[commit] --> PAGES[GitHub Pages 網站]
+  CHK -- 失敗 --> STOP[停止更新・保留昨天的網站]
+  OUT --> EV[events.py 偵測重要事件] --> LINE[LINE 通知]
+  PAGES --> GC[GoatCounter 匿名流量統計]
+</pre></div>
+  <div class="cols">
+    <div class="box"><h3>技術選擇</h3><p>Python（pandas、numpy、requests、Pillow）產生靜態 HTML；資料內嵌在頁面裡，沒有後端伺服器。</p></div>
+    <div class="box"><h3>可靠性是需求的一部分</h3><p>任一資料源失敗只標記舊資料、不中斷；自動檢查不通過就停止發布；發現平台排程延遲約 5 小時，改用外部準時觸發並保留備援。</p></div>
+    <div class="box"><h3>雙語</h3><p>文字寫成「中文｜English」成對標記，同一份程式輸出兩個語言版本，自動檢查英文頁沒有殘留中文。</p></div>
+  </div>
+</section>
+
+<section id="metrics">
+  <header><div class="lbl">Metrics &amp; risks</div><h2>成功指標與風險管理</h2></header>
+  <div class="g2">
+    <div class="tw"><table><thead><tr><th>成功指標</th><th>怎麼追蹤</th></tr></thead><tbody>
+      <tr><td>數據準時</td><td>每天 UTC 00:15 更新，落後就標記舊資料</td></tr>
+      <tr><td>輸出正確</td><td>自動檢查不通過就停止發布</td></tr>
+      <tr><td>策略可信度</td><td>定案後績效與凍結情境逐日比對</td></tr>
+      <tr><td>使用情況</td><td>各分頁匿名造訪數（GoatCounter）</td></tr>
+    </tbody></table></div>
+    <div class="tw"><table><thead><tr><th>風險</th><th>對策</th></tr></thead><tbody>
+      <tr><td>資料源中斷或被擋</td><td>主要＋備援來源、沿用舊值並標記</td></tr>
+      <tr><td>過度擬合</td><td>逐輪回測、事先固定參數、定案日</td></tr>
+      <tr><td>數據授權</td><td>只用可公開的來源，不合授權者不上線</td></tr>
+      <tr><td>被當成投資建議</td><td>標示情境非預測、全站免責聲明</td></tr>
+    </tbody></table></div>
+  </div>
+  <figure style="max-width:640px"><img src="img/og.jpg" alt="每日自動產生的分享預覽圖" loading="lazy"><figcaption><b>每日分享卡</b>・分享連結時就是一張即時的狀態摘要。</figcaption></figure>
+</section>
+
+<section id="roadmap">
+  <header><div class="lbl">Scope &amp; roadmap</div><h2>範疇與路線圖</h2></header>
+  <div class="rm">
+    <div class="box"><h3 style="color:var(--bot)">已上線</h3><ul><li>頂部／底部訊號</li><li>週期策略與情境</li><li>中期狀態</li><li>自動檢查與分享</li></ul></div>
+    <div class="box"><h3 style="color:var(--strat)">下一步</h3><ul><li>接上 LINE 通知</li><li>2026-12-19 底部判定</li><li>流量數據回顧</li></ul></div>
+    <div class="box"><h3 style="color:var(--mid)">之後</h3><ul><li>付費持有者數據（需可公開授權）</li><li>定案後績效年度檢討</li></ul></div>
+    <div class="box"><h3 style="color:var(--top)">明確不做</h3><ul><li>交易下單</li><li>個人持倉</li><li>價格預測與機率</li><li>短線買賣訊號</li></ul></div>
+  </div>
+</section>
+
+<section id="learn">
+  <header><div class="lbl">Reflection</div><h2>反思</h2></header>
+  <ol class="steps">
+    <li><b>負面結果同樣有價值</b><span>大部分研究的結論是「這個沒用」。把它們留在產品之外，比多一個看似厲害的功能更重要。</span></li>
+    <li><b>誠實比漂亮的數字更能建立信任</b><span>主動標示回測限制、設定定案日接受檢驗，是我對數據產品最在意的原則。</span></li>
+    <li><b>降低承諾也是一種產品決策</b><span>中期功能從「訊號」降為「參考」、情境不給機率，都是依證據強度調整功能承諾。</span></li>
+    <li><b>把邊界寫清楚</b><span>明確的「不做什麼」（不交易、不存持倉、不預測），讓每次新需求都能快速判斷要不要做。</span></li>
+  </ol>
+</section>
+
+<footer>
+  <div>Tidemark · BTC 週期訊號　·　<a href="https://north7.github.io/tidemark/">north7.github.io/tidemark</a></div>
+  <div>數據來源：Coin Metrics、DefiLlama、TFTC、OKX、Binance、Coinbase、Bitstamp、alternative.me。策略績效為歷史回測與模擬，僅供參考，不構成投資建議。</div>
+</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+const dark=!matchMedia('(prefers-color-scheme: light)').matches;
+mermaid.initialize({startOnLoad:true,theme:dark?'dark':'default',themeVariables:{fontFamily:'Noto Sans TC'}});
+</script>
+</body>
+</html>

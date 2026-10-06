@@ -175,6 +175,10 @@ MVRV Z-score、NUPL、Puell Multiple、Realized Price 倍數（價格 / 實現�
 - 只用靜態檔案與內嵌資料，不在瀏覽器端呼叫外部 API（例外，2026-10 經使用者同意：GoatCounter 匿名流量統計 tidemark.goatcounter.com，
   無 Cookie、不收集個人資料，頁尾須保留告知；每個分頁＋模式各計一個路徑）
 
+## 作品集頁（2026-10 加入）
+`docs/case-study/`（north7.github.io/tidemark/case-study/）是使用者的 PM 作品集案例頁，靜態檔案、不由 run.py 產生。
+**Tidemark 網站與 README 都不放它的連結**（使用者要求）；修改時直接編輯該資料夾。
+
 ## 部署步驟（由 Claude Code 執行）
 1. 確認 git 與 GitHub CLI（gh）已安裝，沒有就引導安裝
 2. `gh auth login`：告訴使用者瀏覽器會跳出授權頁，請他點同意
