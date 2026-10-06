@@ -604,6 +604,52 @@ def _years_label(n: int) -> str:
     return f"⟪{zh}年的|{n} years of⟫"
 
 
+def _tide_note(mode: str, latest: dict) -> str:
+    """一句話的潮汐筆記：依當日數據挑選句型（規則固定，不是預測）。"""
+    today = pd.Timestamp(latest["date"])
+    price = latest["price_usd"]
+    if mode == "bottom":
+        b = latest["bottom"]
+        ct, sig, cold, bt = b["cycle_test"], b["signal"], b["cold_score"], b["timing"]["score"]
+        low = ct["current_low"]
+        up = price / low["price"] - 1
+        left = (pd.Timestamp(ct["decisive_date"]) - today).days
+        if sig >= BOTTOM_STRONG:
+            return (f"⟪海床就在腳下：冷度 {cold:.0f}、底部時機 {bt:.0f}，歷史上像這樣的退潮，只出現在週期最深的那幾週。|"
+                    f"The seabed is underfoot: coldness {cold:.0f}, bottom timing {bt:.0f} — tides this low have only shown up in a cycle's deepest weeks.⟫")
+        if sig >= BOTTOM_WINDOW:
+            return (f"⟪潮水退到底部區：估值與礦工一起變冷，時鐘也指向底部時段——這是過去三輪最值得留意的海域。|"
+                    f"The tide has ebbed into the bottom zone: valuation and miners are cold together and the clock points to bottom season — the stretch of water that mattered most in the last three cycles.⟫")
+        if ct["status"] == "testing" and up > 0:
+            return (f"⟪退潮後的海床正在接受考驗：價格已離本輪低點 ${low['price']:,.0f} 上浮 {up * 100:.0f}%，再撐 {left} 天不破，"
+                    f"「ETF 時代熊市變淺」就多一張選票。|The ebb-tide floor is on trial: price has floated {up * 100:.0f}% off this cycle's ${low['price']:,.0f} low; "
+                    f"hold for {left} more days and the “shallower bears in the ETF era” case gains another vote.⟫")
+        if bt >= 50 and cold < 40:
+            return (f"⟪時鐘說現在是撿貝殼的季節（底部時機 {bt:.0f}），海水卻已經回暖（冷度 {cold:.0f}）——市場沒等到最冷就先游走了。|"
+                    f"The clock says it's shell-gathering season (bottom timing {bt:.0f}), but the water has already warmed (coldness {cold:.0f}) — the market swam off before the coldest point.⟫")
+        return (f"⟪離海床還遠：冷度 {cold:.0f}、底部時機 {bt:.0f}，現在是漲潮的季節，不是撿貝殼的時候。|"
+                f"Far from the seabed: coldness {cold:.0f}, bottom timing {bt:.0f} — this is a season of rising water, not shell-gathering.⟫")
+    sig, heat, tim = latest["top_signal"], latest["heat_score"], latest["timing_score"]
+    fz, fe = (("水溫偏涼", "The water is cool") if heat < 40 else ("水溫正暖", "The water is warm") if heat < 65
+              else ("水面開始翻騰", "The surface is starting to churn"))
+    win = pd.Timestamp(latest["timing"]["expected_window_by_low"]["full_from"])
+    months = max(0, round((win - today).days / 30.4))
+    if sig >= SIGNAL_ALERT:
+        return (f"⟪大潮拍岸：熱度 {heat:.0f} × 時機 {tim:.0f}，歷史上的最終頂部都長在這種浪頭上——該檢查的是退路，不是浪有多高。|"
+                f"Spring tide hitting the shore: heat {heat:.0f} × timing {tim:.0f} — past cycle tops all formed on waves like this. Check the exits, not the wave height.⟫")
+    if sig >= SIGNAL_WINDOW:
+        return (f"⟪潮水越過頂部窗口線：市場夠熱、時間也對了，接下來的每一波浪都值得多看兩眼。|"
+                f"The tide has crossed the top-window line: hot enough and on schedule — every wave from here deserves a second look.⟫")
+    if tim >= 50:
+        return (f"⟪月亮已經就位（時機 {tim:.0f}），只差潮水夠高：熱度 {heat:.0f}，市場還沒熱到能掀起大浪。|"
+                f"The moon is in position (timing {tim:.0f}); only the water is missing: heat {heat:.0f} isn't enough to raise a big wave yet.⟫")
+    if heat >= 65:
+        return (f"⟪浪很大，但月亮不在：熱度 {heat:.0f} 已經偏熱，時機卻是 {tim:.0f}——歷史上這種時候多半是中段浪頭，不是終點。|"
+                f"Big waves, but no moon: heat {heat:.0f} runs hot while timing is {tim:.0f} — historically that's a mid-cycle crest, not the finish.⟫")
+    return (f"⟪{fz}（熱度 {heat:.0f}），但月亮還沒到位（時機 {tim:.0f}）——按過去三輪的節奏，頂部窗口約在 {months} 個月後打開。|"
+            f"{fe} (heat {heat:.0f}), but the moon isn't in place (timing {tim:.0f}) — on the last three cycles' rhythm, the top window opens in about {months} months.⟫")
+
+
 def _hero(mode: str, latest: dict, ncat: int) -> str:
     """全屏首屏：液態大數字（瑞士）＋水位尺（潮汐）＋極光波浪。"""
     top = mode == "top"
@@ -649,6 +695,7 @@ def _hero(mode: str, latest: dict, ncat: int) -> str:
       <div class="eyebrow2"><i class="live"></i>LIVE · {latest['date']} — {title}</div>
       <div class="giant" data-v="{v:.1f}" role="img" aria-label="{num}"><span class="z">{lead}</span><span class="v">{num}</span></div>
       <div class="statusline"><span class="pill2">{level}</span><p>{lede}</p></div>
+      <p class="tide-note"><span>⟪潮汐筆記|TIDE NOTE⟫</span>{_tide_note(mode, latest)}</p>
       <div class="kpis2">{kpi_html}</div>
     </div>
     <div class="staff2" aria-hidden="true"><div class="rule"></div>{ticks}{thr_html}<div class="water" style="height:{max(v, 1.2):.1f}%"></div>{mk_html}</div>
@@ -1657,6 +1704,11 @@ table.data.fit.st-trades td:last-child{white-space:normal;overflow:visible;line-
 .st-pos-b{opacity:.75}
 .st-bt{color:var(--mut)}
 .tip-al{color:var(--topline);font-weight:700}
+
+.tide-note{margin:2vh 0 0;max-width:720px;font-size:clamp(15px,1.15vw,18px);line-height:1.65;color:var(--fg);padding:2px 0 2px 16px;border-left:2px solid var(--a1);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--a1) 10%,transparent),transparent 70%)}
+.tide-note span{display:block;font:600 10.5px var(--mono);letter-spacing:.18em;color:var(--a1);margin-bottom:2px}
+@media (max-width:899px){.tide-note{font-size:15px}}
 </style>
 </head>
 <body>
@@ -1931,13 +1983,25 @@ function paintLiquid(el){const ib=inkBox(el),h=el.offsetHeight,top=ib.bottom-(ib
   const w=`<svg xmlns='http://www.w3.org/2000/svg' width='600' height='60'><defs><linearGradient id='g' x1='0' x2='1'><stop offset='0' stop-color='${a2}'/><stop offset='.5' stop-color='${a1}'/><stop offset='1' stop-color='${a2}'/></linearGradient></defs><path d='M0 30 C 75 6, 225 6, 300 30 S 525 54, 600 30 V60 H0Z' fill='url(%23g)'/></svg>`;
   el.style.backgroundImage=`url("data:image/svg+xml,${w.replace(/#/g,'%23').replace(/</g,'%3C').replace(/>/g,'%3E')}"),linear-gradient(180deg,${a1},${a2})`;
   el.style.backgroundSize=`600px 60px,100% ${Math.max(h-top-28,0)}px`;el.style.backgroundPosition=`${LQ.x}px ${top-30}px,0 ${top+28}px`;}
-function drawWaves(svg){const lv=(+svg.dataset.lv||0)/100,A=16+lv*70,a1=cssb('--a1'),a2=cssb('--a2'),a3=cssb('--a3');
-  const P=(amp,len,sp,y)=>{let d=`M0 ${y}`;for(let x=0;x<=1440;x+=16)d+=` L${x} ${(y+Math.sin(x/len+PH*sp)*amp+Math.sin(x/(len*2.4)+PH*sp*.6)*amp*.5).toFixed(1)}`;return d;};
-  const top=P(A,95,1.4,200);
-  svg.innerHTML=`<defs><linearGradient id="w1" x1="0" x2="1"><stop offset="0" stop-color="${a2}"/><stop offset=".55" stop-color="${a1}"/><stop offset="1" stop-color="${a3}"/></linearGradient>
-  <linearGradient id="wf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><mask id="wm"><rect width="1440" height="300" fill="url(#wf)"/></mask></defs>
-  <g mask="url(#wm)"><path d="${P(A*.6,180,.7,120)} L1440 300 L0 300Z" fill="url(#w1)" opacity=".12"/><path d="${P(A*.8,130,1,160)} L1440 300 L0 300Z" fill="url(#w1)" opacity=".2"/><path d="${top} L1440 300 L0 300Z" fill="url(#w1)" opacity=".34"/></g>
-  <path d="${top}" fill="none" stroke="url(#w1)" stroke-width="2" opacity=".9"/>`;}
+/* 波浪：頂部＝漲潮（湍急、隨訊號變大）；底部＝退潮・深海（低、慢、長的湧浪＋由海底往上浮的氣泡）。
+   每張圖的漸層／遮罩 id 各自加上模式前綴，避免引用到被隱藏的另一張圖（會導致整個不顯示） */
+const BUB=[];
+function drawWaves(svg){const lv=(+svg.dataset.lv||0)/100,a1=cssb('--a1'),a2=cssb('--a2'),a3=cssb('--a3'),k=(svg.closest('.hero2')||{}).dataset?.hero||'x',deep=k==='bottom';
+  const A=deep?12+lv*40:16+lv*70,sp=deep?.45:1,L=deep?1.7:1;
+  const P=(amp,len,spd,y)=>{let d=`M0 ${y}`;for(let x=0;x<=1440;x+=16)d+=` L${x} ${(y+Math.sin(x/(len*L)+PH*spd*sp)*amp+Math.sin(x/(len*L*2.4)+PH*spd*sp*.6)*amp*.5).toFixed(1)}`;return d;};
+  const top=P(A,95,1.4,deep?215:200),g1=`w1-${k}`,gf=`wf-${k}`,gm=`wm-${k}`;
+  let bub='';
+  if(deep){const r=svg.getBoundingClientRect(),asp=r.width&&r.height?(r.height/300)/(r.width/1440):1,n=Math.round(14+lv*46);
+    while(BUB.length<n)BUB.push({x:Math.random()*1440,y:40+Math.random()*300,r:2+Math.random()*5,v:.18+Math.random()*.45,w:Math.random()*6.28});
+    BUB.length=Math.min(BUB.length,n);
+    for(const b of BUB){if(!RM){b.y-=b.v;b.w+=.02;}if(b.y<20){b.y=300+Math.random()*60;b.x=Math.random()*1440;}
+      const cx=b.x+Math.sin(b.w)*8,op=Math.max(0,Math.min(1,(300-b.y)/50))*Math.max(0,Math.min(1,(b.y-20)/110))*(.55+lv*.45);
+      bub+=`<ellipse cx="${cx.toFixed(1)}" cy="${b.y.toFixed(1)}" rx="${(b.r*asp).toFixed(2)}" ry="${b.r}" fill="${a3}" fill-opacity=".12" stroke="${a3}" stroke-width="1.3" opacity="${op.toFixed(2)}" filter="url(#bg-${k})"/>`;}}
+  svg.innerHTML=`<defs><linearGradient id="${g1}" x1="0" x2="1"><stop offset="0" stop-color="${a2}"/><stop offset=".55" stop-color="${a1}"/><stop offset="1" stop-color="${a3}"/></linearGradient>
+  <linearGradient id="${gf}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><mask id="${gm}"><rect width="1440" height="300" fill="url(#${gf})"/></mask>
+  <filter id="bg-${k}" x="-1" y="-1" width="3" height="3"><feGaussianBlur stdDeviation="1.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <g mask="url(#${gm})"><path d="${P(A*.6,180,.7,deep?150:120)} L1440 300 L0 300Z" fill="url(#${g1})" opacity="${deep?.1:.12}"/><path d="${P(A*.8,130,1,deep?185:160)} L1440 300 L0 300Z" fill="url(#${g1})" opacity="${deep?.16:.2}"/><path d="${top} L1440 300 L0 300Z" fill="url(#${g1})" opacity="${deep?.28:.34}"/></g>
+  ${bub}<path d="${top}" fill="none" stroke="url(#${g1})" stroke-width="${deep?1.5:2}" opacity="${deep?.75:.9}"/>`;}
 function setGiant(g,v){const n=String(Math.round(v)),pad=n.padStart(2,'0'),lead=pad.slice(0,pad.length-n.length);g.innerHTML=`<span class="z">${lead}</span><span class="v">${n}</span>`;}
 function heroShow(){const h=activeHero();if(!h)return;const g=h.querySelector('.giant'),v=+g.dataset.v;LQ.target=Math.max(v,6);
   if(RM){setGiant(g,v);LQ.lv=LQ.target;const pl=()=>{paintLiquid(g.querySelector('.v'));drawWaves(h.querySelector('.waves2'));};pl();document.fonts&&document.fonts.ready.then(pl);return;}
