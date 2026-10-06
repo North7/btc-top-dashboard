@@ -58,6 +58,7 @@ IND_EN = {
     "cold_puell": ("Puell Multiple", "Miner revenue vs its one-year average. Past bottoms: 0.31, 0.39, 0.48. Structurally lower miner revenue after the 2024 halving may make this read colder."),
     "cold_ribbon": ("Hash Ribbons (deepest in 90d)", "Hashrate 30d avg falling below 60d avg means miners are capitulating — common around bottoms, but also after halvings and policy shocks, so it is only supporting evidence."),
     "cold_ahr999": ("AHR999", "Price relative to its 200-day geometric mean and a long-term exponential growth curve. Past bottoms: 0.23, 0.27, 0.26; 1.2 is the customary DCA line (neutral)."),
+    "ref_delta": ("Delta Price multiple (price ÷ Delta Price)", "Delta Price = (realized cap − average cap) ÷ supply. At the last three cycle bottoms price sat at 1.0–1.25× Delta Price; false bottoms were all above 1.4×. After validation in October 2026 it is shown for reference only and not scored (highly correlated with MVRV; adding it slightly weakened the separation of real and false bottoms)."),
     "cold_powerlaw": ("Power Law (price ÷ power-law trend)", "Bitcoin's long-run price has grown along a power law (log price vs. log days is close to a straight line); the trend line is fitted each day using only data up to that day. 1.0x = trend price (neutral); past bottoms: 0.24x, 0.48x, 0.36x. Highly correlated with AHR999, so the two are averaged within one group rather than double-counted. Used for bottoms only: top multiples fall fast each cycle (8.5→6.6→2.3→1.1), and the 2021-04 and 2024-03 mid-cycle highs were as high as the real tops."),
 }
 CAT_EN = {"onchain_valuation": "On-chain valuation", "holder_behavior": "Holder behavior", "capital_flows": "Capital flows",
@@ -165,6 +166,7 @@ def _series(hist: pd.DataFrame, ind: pd.DataFrame, defs: dict) -> dict:
     for k, col in (("seq", "strat_eq"), ("sbh", "strat_bh"), ("seqb", "strat_eq_b"), ("ma50", "mid_ma50"), ("ma200", "mid_ma200"), ("ma20w", "mid_ma20w"), ("stl", "mid_st_line"), ("std", "mid_st_dir")):
         if col in hist:
             cols[k] = hist[col]
+    cols["v_ref_delta"] = ind["delta_ratio"].reindex(hist.index) if "delta_ratio" in ind else None
     cols["v_days_since_halving"] = hist["days_since_halving"]
     cols["v_days_since_low"] = hist["days_since_low"]
     df = pd.DataFrame(cols).dropna(subset=["p"])
@@ -836,6 +838,21 @@ def _bottom_cold(latest: dict, ind_meta: dict) -> str:
                 f'<span class="ind-sc cool-t">{_n(sc)}</span></span>'
                 f'<span class="mbar"><i class="cool" style="width:{min(sc or 0, 100):.0f}%"></i></span>'
                 f'<span class="ind-foot">{"⟪週期底部法|Cycle-bottom method⟫" if i.get("method") == "cycle_bottom" else "⟪投降深度|Capitulation depth⟫"}<span class="more">⟪詳情|Details⟫ ›</span></span></button>')
+        for k, i in (b.get("references") or {}).items():
+            if grp != "估值":
+                continue
+            pb = "、".join(f"{v:.2f}" for v in i["past_bottoms"].values())
+            pbe = ", ".join(f"{v:.2f}" for v in i["past_bottoms"].values())
+            ind_meta[k] = {"label": _lab(k, i["label"]), "cat": "⟪冷度|Coldness⟫ · " + _grp(grp) + " · ⟪參考|reference⟫", "unit": "x",
+                           "desc": _desc(k, i["description"]),
+                           "method": f"⟪只作參考，不計分。過去三次底部：{pb} 倍；目前 Delta Price ${i['delta_price']:,.0f}。|Reference only, not scored. Past three bottoms: {pbe}×; Delta Price now ${i['delta_price']:,.0f}.⟫",
+                           "value": _fmt(i["value"], "x"), "score": None, "band": "cool-t", "asOf": latest["price_date"], "stale": False, "hasScore": False}
+            cards.append(
+                f'<button class="ind ref" data-k="{k}" aria-label="{_lab(k, i["label"])} ⟪詳情|details⟫">'
+                f'<span class="ind-top"><span class="ind-name">{_lab(k, i["label"])}</span><span class="ref-tag">⟪參考|Ref⟫</span></span>'
+                f'<span class="ind-mid"><span class="ind-val">{_fmt(i["value"], "x")}</span><span class="ref-dp">${i["delta_price"]:,.0f}</span></span>'
+                f'<span class="ref-note">⟪過去底部 {pb} 倍・不計分|past bottoms {pbe}× · not scored⟫</span>'
+                f'<span class="ind-foot">⟪參考指標|Reference⟫<span class="more">⟪詳情|Details⟫ ›</span></span></button>')
         out.append(f"""
 <details class="cat" id="grp-{GRP_KEY[grp]}" open>
   <summary>
@@ -1759,6 +1776,11 @@ table.data.fit.st-trades td:last-child{white-space:normal;overflow:visible;line-
 .fut-kpis .c b{color:var(--s-cold)}.fut-kpis .m b{color:var(--strat)}.fut-kpis .o b{color:var(--topline)}
 .fut-how{margin:10px 0 0;padding-left:18px;font-size:13px;color:var(--mut)}.fut-how li{margin:5px 0}.fut-how b{color:var(--fg);margin-right:8px}
 @media (max-width:899px){.fut-kpis{grid-template-columns:1fr 1fr}.fut-kpis div:nth-child(3){padding-left:0;border-left:0}.fut-kpis div:nth-child(n+3){border-top:1px solid var(--line)}}
+
+.ind.ref{border-style:dashed}
+.ref-tag{font:700 10px var(--mono);color:var(--mut);border:1px solid var(--line2);border-radius:5px;padding:1px 6px;margin-left:auto}
+.ref-dp{font:600 13px var(--mono);color:var(--mut)}
+.ref-note{display:block;font-size:12px;color:var(--mut);margin:4px 0 2px}
 </style>
 </head>
 <body>

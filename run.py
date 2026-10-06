@@ -180,6 +180,12 @@ def build_bottom(ind, hist, cold_sc, cold_grp, cold_meta, ribbon_min90, btim, bi
         "groups": {COLD_GROUP_LABEL[g]: {"score": r(cold_grp[g].ffill().iloc[-1], 1), "weight": w}
                    for g, w in COLD_WEIGHTS.items()},
         "indicators": comps,
+        "references": {"ref_delta": {
+            "label": "Delta Price 倍數（價格 ÷ Delta Price）", "unit": "x", "scored": False,
+            "value": r(ind["delta_ratio"].ffill().iloc[-1]), "delta_price": r(ind["delta_price"].ffill().iloc[-1], 0),
+            "past_bottoms": {str(d.date()): r(ind.loc[d, "delta_ratio"], 3) for d in bottoms},
+            "description": "Delta Price =（實現市值 − 平均市值）÷ 流通量。過去三次週期底部價格都落在 Delta Price 的 1.0–1.25 倍，"
+                           "假底部都在 1.4 倍以上。2026-10 驗證後只作參考、不計入冷度（與 MVRV 高度相關，加入後分辨力略降）。"}},
         "timing": {"score": r(b["timing"], 1), "score_top": r(b["timing_top"], 1), "score_halving": r(b["timing_halving"], 1),
                    "days_since_top": int(b["days_since_top"]), "days_since_halving": int(b["days_since_halving"]),
                    "last_top": str(last_top.date()), "last_halving": str(last_h.date()),

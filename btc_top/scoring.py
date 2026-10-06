@@ -125,6 +125,10 @@ def build_indicators(raw: dict[str, pd.DataFrame]) -> pd.DataFrame:
     growth = pd.Series(10 ** (5.84 * np.log10(age) - 17.01), index=idx)
     gm200 = np.exp(np.log(cm["PriceUSD"]).rolling(200, min_periods=200).mean())
     ind["ahr999"] = (cm["PriceUSD"] / gm200) * (cm["PriceUSD"] / growth)
+    # 底部參考（不計分）：Delta Price =（實現市值 − 平均市值）÷ 流通量；平均市值為上市以來市值的累計平均（只用當天以前）。
+    # 2026-10 驗證：三次底部 1.01–1.24 倍、假底部 ≥1.42 倍；加入冷度後分辨力略降（與 MVRV 相關 0.67），因此只作參考。
+    ind["delta_price"] = (rc - mc.expanding().mean()) / cm["SplyCur"]
+    ind["delta_ratio"] = cm["PriceUSD"] / ind["delta_price"]
     # 底部用：Power Law = 價格 ÷ 冪律趨勢價（log 價格對 log 天數的直線；每天只用當天以前的資料擬合，無前視）
     ind["powerlaw"] = powerlaw_ratio(cm["PriceUSD"])
 
