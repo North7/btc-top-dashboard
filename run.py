@@ -359,6 +359,11 @@ def main():
     render_page(latest, hist, ind, DOCS / "index.html", defs, lang="zh")
     render_page(latest, hist, ind, DOCS / "en" / "index.html", defs, lang="en")
     (DOCS / ".nojekyll").touch()
+    try:  # 分享預覽圖：失敗不影響主流程
+        from btc_top.ogimage import make_og
+        make_og(latest, DOCS / "og.png")
+    except Exception as e:  # noqa: BLE001
+        print("分享預覽圖產生失敗：", e)
     # 健康檢查：只把「新出現」的警告標出來，避免同一問題每天重複通知
     _, warns = run_checks(DOCS)
     key = lambda w: w.split("（")[0]

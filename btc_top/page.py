@@ -248,7 +248,9 @@ def _clock(days_now, center, flat, ramp, past: dict, label_now, kind="top") -> s
     """時機頁：天數軌道（過去頂部、窗口、現在位置）。"""
     end = max(1500, days_now + 120)
     p = lambda x: f"{max(0, min(100, x / end * 100)):.2f}%"
-    dots = "".join(f'<span class="ck-top{" ck-bot" if kind == "bot" else ""}" style="left:{p(v)}" title="{d[:7]}: {v} ⟪天|days⟫"><i></i></span>'
+    ev = "⟪底部|bottom⟫" if kind == "bot" else "⟪頂部|top⟫"
+    dots = "".join(f'<span class="ck-top{" ck-bot" if kind == "bot" else ""}" style="left:{p(v)}" tabindex="0" '
+                   f'data-tip="⟪{d[:7]} {ev[1:-1].split("|")[0]}出現在第 {v} 天|{d[:7]} {ev[1:-1].split("|")[1]} came on day {v}⟫"><i></i></span>'
                    for d, v in past.items())
     # 距離很近的頂部合併成一個標籤（例如 2017·2021·2025），避免文字重疊
     groups = []
@@ -257,25 +259,39 @@ def _clock(days_now, center, flat, ramp, past: dict, label_now, kind="top") -> s
             groups[-1].append((d, v))
         else:
             groups.append([(d, v)])
-    labels, last_x, row = "", -100.0, 0
-    for g in groups:
-        x = sum(v for _, v in g) / len(g) / end * 100
-        text = "·".join("'" + d[2:4] for d, _ in sorted(g))
-        row = 1 - row if x - last_x < 16 else 0  # 太近就錯開到上一排
-        last_x = x
-        labels += f'<span class="ck-lbl{" r2" if row else ""}" style="left:{x:.2f}%">{text}</span>'
+    labels, rows_end = "", [-100.0, -100.0, -100.0]
+    for d, v in sorted(past.items(), key=lambda kv: kv[1]):
+        x = v / end * 100
+        row = next((i for i, e in enumerate(rows_end) if x - e >= 7), 2)  # 放進第一個不會重疊的排
+        rows_end[row] = x
+        labels += f'<span class="ck-lbl r{row}" style="left:{x:.2f}%">\'{d[2:4]}</span>'
     tops = dots + labels
     ticks = "".join(f'<span class="ck-tick" style="left:{p(x)}">{x}</span>' for x in range(0, end + 1, 250))
     return f"""
 <div class="ck">
   <div class="ck-track">
-    <span class="ck-band soft" style="left:{p(center - flat - ramp)};width:calc({p(center + flat + ramp)} - {p(center - flat - ramp)})"></span>
-    <span class="ck-band" style="left:{p(center - flat)};width:calc({p(center + flat)} - {p(center - flat)})"></span>
+    <span class="ck-band soft" tabindex="0" data-tip="⟪有分數：第 {max(0, center - flat - ramp):.0f}–{center + flat + ramp:.0f} 天|Scores: days {max(0, center - flat - ramp):.0f}–{center + flat + ramp:.0f}⟫" style="left:{p(center - flat - ramp)};width:calc({p(center + flat + ramp)} - {p(center - flat - ramp)})"></span>
+    <span class="ck-band" tabindex="0" data-tip="⟪滿分窗口：第 {center - flat:.0f}–{center + flat:.0f} 天（過去平均 {center:.0f} 天 ± {flat} 天）|Full score: days {center - flat:.0f}–{center + flat:.0f} (past average {center:.0f} ± {flat})⟫" style="left:{p(center - flat)};width:calc({p(center + flat)} - {p(center - flat)})"></span>
     {tops}
     <span class="ck-now{' al' if days_now / end < .1 else ' ar' if days_now / end > .9 else ''}" style="left:{p(days_now)}"><b>{label_now}</b></span>
   </div>
   <div class="ck-ticks">{ticks}</div>
+  <div class="ck-legend"><span><i class="d{' b' if kind == 'bot' else ''}"></i>⟪過去{'底部' if kind == 'bot' else '頂部'}（年份標在上方）|Past {'bottoms' if kind == 'bot' else 'tops'} (years above)⟫</span>
+    <span><i class="bd"></i>⟪滿分窗口|Full-score window⟫</span><span><i class="bs"></i>⟪有分數|Partial score⟫</span><span><i class="nw"></i>⟪現在|Now⟫</span><span class="hint">⟪滑過或點一下圖上的點與色帶看說明|Hover or tap dots and bands for details⟫</span></div>
+  <p class="ck-where">{_where(days_now, center, flat, ramp)}</p>
 </div>"""
+
+
+def _where(d, center, flat, ramp) -> str:
+    """一句話：現在相對滿分窗口的位置。"""
+    lo, hi = center - flat, center + flat
+    if lo <= d <= hi:
+        return f"⟪● 在滿分窗口內，再 {hi - d:.0f} 天離開|● Inside the full-score window; leaves in {hi - d:.0f} days⟫"
+    if d < lo:
+        return f"⟪○ 距滿分窗口還有 {lo - d:.0f} 天|○ {lo - d:.0f} days until the full-score window⟫"
+    if d <= hi + ramp:
+        return f"⟪◐ 已過滿分窗口 {d - hi:.0f} 天，分數遞減中|◐ {d - hi:.0f} days past the full-score window; score fading⟫"
+    return f"⟪○ 已過這次的窗口 {d - hi - ramp:.0f} 天（下一個窗口見下方日期）|○ {d - hi - ramp:.0f} days past this window (next window dates below)⟫"
 
 
 BOTTOM_LEVEL_TEXT = {"none": "⟪未觸發|Not triggered⟫", "zone": "⟪底部區|Bottom zone⟫", "strong": "⟪強烈底部|Strong bottom⟫"}
@@ -646,7 +662,8 @@ def _strategy(latest: dict) -> str:
     </div>"""
     return f"""
   <div class="view-head"><div class="sec-n">⟪週期策略|CYCLE STRATEGY⟫ · ⟪回測模擬|BACKTEST⟫</div><h2>⟪週期|Cycle⟫ <span>⟪策略|strategy⟫</span></h2>
-    <p>⟪「警戒 + 趨勢確認」：用頂部／底部訊號判斷週期位置，用週線 Supertrend 確認趨勢。逐輪回測自 2014 年起 {_x(bt['strategy'])}，同期持有 {_x(bt['hold'])}。|“Alert + trend confirmation”: the top/bottom signals locate the cycle and the weekly Supertrend confirms the trend. Walk-forward backtest since 2014: {_x(bt['strategy'])} vs {_x(bt['hold'])} for holding.⟫</p></div>
+    <p>⟪「警戒 + 趨勢確認」：用頂部／底部訊號判斷週期位置，用週線 Supertrend 確認趨勢。逐輪回測自 2014 年起 {_x(bt['strategy'])}，同期持有 {_x(bt['hold'])}。|“Alert + trend confirmation”: the top/bottom signals locate the cycle and the weekly Supertrend confirms the trend. Walk-forward backtest since 2014: {_x(bt['strategy'])} vs {_x(bt['hold'])} for holding.⟫</p>
+    <nav class="jump" aria-label="⟪頁內跳轉|Jump to⟫"><a data-jump=".st-card">⟪狀態|Status⟫</a><a data-jump=".st-live">⟪定案後追蹤|Live tracking⟫</a><a data-jump=".st-chart">⟪資金曲線|Equity⟫</a><a data-jump=".st-fut">⟪未來情境|Scenarios⟫</a><a data-jump=".st-bottom">⟪績效與交易|Performance &amp; trades⟫</a></nav></div>
   <div class="st-top">{status}{rules}</div>
   {_live(latest)}
   <div class="card st-chart">
@@ -767,8 +784,8 @@ def _hero(mode: str, latest: dict, ncat: int) -> str:
     <div class="h2-left">
       <div class="eyebrow2"><i class="live"></i>LIVE · {latest['date']} — {title}</div>
       <div class="giant" data-v="{v:.1f}" role="img" aria-label="{num}"><span class="z">{lead}</span><span class="v">{num}</span></div>
-      <div class="statusline"><span class="pill2">{level}</span><p>{lede}</p></div>
       <p class="tide-note"><span>⟪潮汐筆記|TIDE NOTE⟫</span>{_tide_note(mode, latest)}</p>
+      <div class="statusline"><span class="pill2">{level}</span><p>{lede}</p></div>
       <div class="kpis2">{kpi_html}</div>
     </div>
     <div class="staff2" aria-hidden="true"><div class="rule"></div>{ticks}{thr_html}<div class="water" style="height:{max(v, 1.2):.1f}%"></div>{mk_html}</div>
@@ -904,9 +921,9 @@ def _bottom_table(hist: pd.DataFrame, latest: dict) -> str:
     keys = {"估值": "valuation", "礦工": "miners", "價格結構": "price"}
     rows = []
     for d, r in h.iterrows():
-        cells = "".join(f"<td>{_n(r.get('coldgrp_' + keys[g]))}</td>" for g in groups)
-        rows.append(f"<tr><td>{d:%m-%d}</td><td>{r['price']:,.0f}</td><td class='b'>{_n(r['bottom_signal'])}</td>"
-                    f"<td>{_n(r['cold'])}</td><td>{_n(r['bottom_timing'])}</td>{cells}</tr>")
+        cells = "".join(_hc(r.get('coldgrp_' + keys[g]), "--s-cold") for g in groups)
+        rows.append(f"<tr><td>{d:%m-%d}</td><td>{r['price']:,.0f}</td>{_hc(r['bottom_signal'], '--s-bot')}"
+                    f"{_hc(r['cold'], '--s-cold')}{_hc(r['bottom_timing'], '--botline')}{cells}</tr>")
     return (f"<table class='data'><thead><tr><th>⟪日期|Date⟫</th><th>⟪價格|Price⟫</th><th>⟪底部訊號|Bottom signal⟫</th><th>⟪冷度|Coldness⟫</th><th>⟪底部時機|Bottom timing⟫</th>"
             f"{head}</tr></thead><tbody>{''.join(rows)}</tbody></table>")
 
@@ -914,14 +931,22 @@ def _bottom_table(hist: pd.DataFrame, latest: dict) -> str:
 GRP_KEY = {"估值": "valuation", "礦工": "miners", "價格結構": "price"}
 
 
+def _hc(v, var="--a1"):
+    """分數儲存格：依分數深淺加底色（數字仍保留，不只靠顏色）。"""
+    if v is None or pd.isna(v):
+        return "<td>—</td>"
+    a = max(0, min(100, float(v))) * .26
+    return f"<td class='hc' style='--h:{a:.0f}%;--hc:var({var})'>{v:.0f}</td>"
+
+
 def _recent_table(hist: pd.DataFrame, cats: dict) -> str:
     h = hist.dropna(subset=["price"]).tail(30).iloc[::-1]
     head = "".join(f"<th>{CAT_SHORT.get(k, c['label'])}</th>" for k, c in cats.items())
     rows = []
     for d, r in h.iterrows():
-        cells = "".join(f"<td>{_n(r.get('cat_' + k))}</td>" for k in cats)
-        rows.append(f"<tr><td>{d:%m-%d}</td><td>{r['price']:,.0f}</td><td class='b'>{_n(r['top_signal'])}</td>"
-                    f"<td>{_n(r['heat'])}</td><td>{_n(r['timing'])}</td>{cells}</tr>")
+        cells = "".join(_hc(r.get('cat_' + k), "--s-heat") for k in cats)
+        rows.append(f"<tr><td>{d:%m-%d}</td><td>{r['price']:,.0f}</td>{_hc(r['top_signal'], '--s-sig')}"
+                    f"{_hc(r['heat'], '--s-heat')}{_hc(r['timing'], '--topline')}{cells}</tr>")
     return (f"<table class='data'><thead><tr><th>⟪日期|Date⟫</th><th>⟪價格|Price⟫</th><th>⟪訊號|Signal⟫</th><th>⟪熱度|Heat⟫</th><th>⟪時機|Timing⟫</th>"
             f"{head}</tr></thead><tbody>{''.join(rows)}</tbody></table>")
 
@@ -1043,6 +1068,7 @@ def render_page(latest: dict, hist: pd.DataFrame, ind: pd.DataFrame, path: Path,
         "__HERO_TOP__": _hero("top", latest, len(shown)),
         "__HERO_BOTTOM__": _hero("bottom", latest, 0),
         "__MIDTERM__": _midterm(latest),
+        "__OG_DESC__": f"⟪{latest['date']}　底部訊號 {latest['bottom_signal']:.0f}・頂部訊號 {latest['top_signal']:.0f}・BTC ${latest['price_usd']:,.0f}。每日更新的比特幣週期訊號。|{latest['date']} · bottom signal {latest['bottom_signal']:.0f} · top signal {latest['top_signal']:.0f} · BTC ${latest['price_usd']:,.0f}. Daily bitcoin cycle signals.⟫",
         "__SCN__": json.dumps({k: latest["scenarios"][k] for k in ("dates", "paths", "window", "top_date", "as_of")} if latest.get("scenarios") else {}),
         "__STRATEGY__": _strategy(latest),
         "__STRAT_TRADES__": json.dumps({**{k: [t["date"] for t in latest.get("strategy", {}).get("trades", []) if t["action"] == k] for k in ("sell", "buy")},
@@ -1137,6 +1163,10 @@ TEMPLATE = r"""<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>__TITLE__</title>
 <link rel="icon" href="__FAVICON__">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Tidemark">
+<meta property="og:title" content="__TITLE__"><meta property="og:description" content="__OG_DESC__">
+<meta property="og:image" content="https://north7.github.io/tidemark/og.png?v=__DATE__"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://north7.github.io/tidemark/og.png?v=__DATE__">
 <meta name="description" content="⟪每日更新的比特幣週期訊號：頂部訊號（熱度 × 時機）與底部訊號（冷度 × 底部時機）。|Daily bitcoin cycle signals: a top signal (heat × timing) and a bottom signal (coldness × bottom timing).⟫">
 <script>/* 預設深色；使用者選過（dark／light／auto）就沿用 */
 var THEME0='dark';try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark'||t==='auto')THEME0=t;}catch(e){}
@@ -1823,6 +1853,71 @@ table.data.fit.st-trades td:last-child{white-space:normal;overflow:visible;line-
 .live-t tr.on td{background:color-mix(in srgb,var(--a1) 10%,transparent)}
 .live-t td.pos{color:var(--s-bot)}.live-t td.neg{color:var(--s-sig)}
 @media (max-width:899px){.live-k{grid-template-columns:1fr 1fr}.live-k div:nth-child(3){padding-left:0;border-left:0}.live-k div:nth-child(n+3){border-top:1px solid var(--line)}}
+
+/* ===== 視覺優化 2026-10-07 ===== */
+/* 2. 小字放大、提高對比（淺色模式的淡灰加深） */
+:root{--faint:#6b7190}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--faint:#7a82a3}}
+:root[data-theme="dark"]{--faint:#7a82a3}
+.kpi2 span,.eyebrow2,.sec-n,.bc-w,.st-grid span,.live-k span,.fut-kpis span,.st-pos span,.staff2 em,.ck-tick,.ck-lbl,.eyebrow,.card-head .eyebrow,
+.tabs-top .tab::before,.ticker span,.st-since,.ref-note,.mid-row small{font-size:12px}
+.kpi2 span,.eyebrow2,.sec-n,.eyebrow,.card-head .eyebrow,.staff2 em,.ck-tick{color:var(--mut)}
+.staff2 .thr span{font-size:11px}
+/* 4. 潮汐筆記為首屏重點，KPI 退為輔助 */
+.tide-note{font-size:clamp(17px,1.45vw,22px);line-height:1.6;margin:2.4vh 0 0;padding:6px 0 6px 18px;border-left-width:3px}
+.tide-note span{font-size:12px}
+.statusline{margin-top:1.8vh}.statusline p{font-size:13.5px;color:var(--mut)}
+.kpi2 b{font-size:clamp(38px,4.2vw,68px)}
+@media (max-width:899px){.tide-note{font-size:16px}.kpi2 b{font-size:clamp(32px,10vw,48px)}}
+/* 5. 時機頁標記 */
+.ck-lbl{bottom:16px;font-size:12px}.ck-lbl.r1{bottom:32px}.ck-lbl.r2{bottom:48px}
+.ck-lbl::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:6px;background:var(--line2)}
+.ck{padding-top:62px}
+.ck-where{margin:10px 0 0;font-size:13.5px;font-weight:600;color:var(--fg)}
+/* 6. 數據表色階 */
+table.data td.hc{background:linear-gradient(90deg,color-mix(in srgb,var(--hc) var(--h),transparent),color-mix(in srgb,var(--hc) var(--h),transparent));font-weight:600}
+/* 7. 頁內跳轉、回到頂部 */
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.jump a{font:600 12px var(--mono);letter-spacing:.06em;padding:7px 14px;border-radius:999px;border:1px solid var(--line2);color:var(--fg);cursor:pointer;text-decoration:none;transition:.25s}
+.jump a:hover{background:linear-gradient(135deg,var(--a1),var(--a2));border-color:transparent;color:#fff}
+.totop{position:fixed;right:20px;bottom:24px;z-index:25;width:44px;height:44px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;cursor:pointer;
+  background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:var(--fg);
+  opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .3s,transform .3s}
+.totop.on{opacity:1;transform:none;pointer-events:auto}.totop:hover{border-color:var(--a1);color:var(--a1)}
+.totop svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:899px){.totop{right:14px;bottom:calc(104px + env(safe-area-inset-bottom))}}
+/* 3. 手機頁首收起 */
+.topbar{transition:background .5s,box-shadow .5s,transform .35s cubic-bezier(.2,.8,.2,1)}
+/* 8. 長按中的圖表 */
+svg.chart.holding{outline:1px dashed var(--line2);outline-offset:4px}
+/* 9. 載入骨架：圖表繪出前顯示淡色流光 */
+svg.chart:empty{background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--fg) 6%,transparent),transparent);background-size:200% 100%;animation:skel 1.4s linear infinite;border-radius:12px}
+@keyframes skel{from{background-position:200% 0}to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){svg.chart:empty{animation:none}.topbar{transition:none}}
+
+/* 時機條的說明提示 */
+.ck-top{z-index:2;cursor:help;padding:6px;outline:none}
+.ck-band{cursor:help;outline:none}
+.ck-top[data-tip]:hover::after,.ck-top[data-tip]:focus::after,.ck-band[data-tip]:hover::after,.ck-band[data-tip]:focus::after{
+  content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%);z-index:5;white-space:nowrap;
+  font:600 12px var(--mono);color:var(--fg);background:color-mix(in srgb,var(--bg) 92%,transparent);border:1px solid var(--line2);
+  padding:6px 10px;border-radius:8px;box-shadow:var(--shadow);pointer-events:none}
+.ck-band[data-tip]:hover::after,.ck-band[data-tip]:focus::after{bottom:calc(100% + 34px)}
+.ck-top:hover i,.ck-top:focus i{transform:scale(1.35);box-shadow:0 0 0 4px color-mix(in srgb,var(--topline) 30%,transparent)}
+.ck-top i{transition:transform .2s}
+.ck-legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:12px;color:var(--mut)}
+.ck-legend span{display:inline-flex;align-items:center;gap:6px}
+.ck-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--topline)}
+.ck-legend i.d.b{background:var(--botline)}
+.ck-legend i.bd{width:16px;height:8px;border-radius:4px;background:var(--accent)}
+.ck-legend i.bs{width:16px;height:8px;border-radius:4px;background:var(--accent);opacity:.25}
+.ck-legend i.nw{width:2px;height:12px;border-radius:0;background:var(--fg)}
+.ck-legend .hint{color:var(--faint)}
+
+#toast{position:fixed;left:50%;bottom:32px;z-index:60;transform:translate(-50%,16px);opacity:0;pointer-events:none;transition:.3s;
+  font:600 13px var(--mono);color:#fff;background:linear-gradient(135deg,var(--a1),var(--a2));padding:10px 18px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+@media (max-width:899px){#toast{bottom:calc(110px + env(safe-area-inset-bottom))}}
 </style>
 </head>
 <body>
@@ -1839,6 +1934,7 @@ __TICKER__
   <div class="tools">
     <a class="iconbtn lang" id="lang" href="__LANG_HREF__" title="__LANG_TITLE__" aria-label="__LANG_TITLE__">__LANG_LABEL__</a>
     <button class="iconbtn" id="theme" aria-label="⟪切換深淺色|Toggle theme⟫" title="⟪深淺色：深色|Theme: dark⟫"></button>
+    <button class="iconbtn" id="share" aria-label="⟪分享|Share⟫" title="⟪分享|Share⟫"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button>
     <button class="iconbtn" id="help" aria-label="⟪怎麼看這個頁面|How to read this page⟫">?</button>
   </div>
 </div></header>
@@ -1931,6 +2027,7 @@ __STRATEGY__
 </section>
 </main>
 
+<button class="totop" id="totop" aria-label="⟪回到頂部|Back to top⟫"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
 <nav class="tabs tabs-bottom" aria-label="⟪分頁|Tabs⟫">__TABS__</nav>
 
 <div class="sheet-wrap" id="sheet" hidden>
@@ -2020,7 +2117,12 @@ function chart(el,i0,series,o){
 function nearest(i0,t){let a=i0,b=TS.length-1;while(b-a>1){const m=(a+b)>>1;TS[m]<t?a=m:b=m;}return (t-TS[a]<=TS[b]-t?a:b)-i0;}
 function bind(els,g,i0fn,draw){const mv=ev=>{const el=ev.currentTarget,L=+(el.dataset.l||44),R=+(el.dataset.r||10),r=el.getBoundingClientRect(),cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left,i0=i0fn();
   const f=Math.max(0,Math.min(1,(cx-L)/(el.clientWidth-L-R)));st[g].hover=nearest(i0,TS[i0]+f*(TS[TS.length-1]-TS[i0]));draw();};
-  els.forEach(e=>{if(!e)return;e.onmousemove=mv;e.ontouchmove=mv;e.ontouchstart=mv;e.onmouseleave=()=>{st[g].hover=null;draw();};});}
+  els.forEach(e=>{if(!e)return;e.onmousemove=mv;e.onmouseleave=()=>{st[g].hover=null;draw();};hold(e,x=>mv({currentTarget:e,clientX:x}));});}
+/* 手機：長按（約 0.3 秒）才顯示數值，按住後左右拖動；一般滑動仍是捲動頁面 */
+function hold(el,on){let tm=null,act=false,sx=0,sy=0;
+  el.ontouchstart=ev=>{const t=ev.touches[0];sx=t.clientX;sy=t.clientY;act=false;clearTimeout(tm);tm=setTimeout(()=>{act=true;el.classList.add('holding');on(sx);},280);};
+  el.ontouchmove=ev=>{const t=ev.touches[0];if(act){ev.preventDefault();on(t.clientX);}else if(Math.abs(t.clientX-sx)>8||Math.abs(t.clientY-sy)>8)clearTimeout(tm);};
+  el.ontouchend=el.ontouchcancel=()=>{clearTimeout(tm);act=false;el.classList.remove('holding');};}
 const f0=v=>v==null?'—':Math.round(v);
 function mainMarks(){return st.mode==='bottom'?[{d:BOTTOMS,c:'--botline',dash:'3 3',op:.75},{d:[CUR_LOW],c:'--botline',dash:'1 4',op:.55}]:[{d:TOPS,c:'--topline',dash:'3 3',op:.6}];}
 function drawMain(){const s=st.main,i0=i0of(s.years),mk=mainMarks();$('#c-main').setAttribute('height',chartH(320,.6));
@@ -2080,6 +2182,14 @@ function closeSheet(){$('#sheet').hidden=true;document.body.style.overflow='';st
 $$('[data-close]').forEach(e=>e.onclick=closeSheet);
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sheet').hidden)closeSheet();});
 $('#help').onclick=()=>openSheet($('#tpl-help').innerHTML);
+/* 分享：手機用系統分享選單（LINE、訊息等）；電腦複製連結。分享的是目前所在的分頁與模式 */
+$('#share').onclick=async()=>{const url='https://north7.github.io/tidemark/⟪|en/⟫'+location.hash,
+  title='Tidemark · ⟪BTC 週期訊號|BTC Cycle Signals⟫',text=document.querySelector('meta[property="og:description"]').content;
+  if(navigator.share&&matchMedia('(pointer:coarse)').matches){try{await navigator.share({title,text,url});}catch(e){}return;}
+  try{await navigator.clipboard.writeText(url);toast('⟪已複製連結|Link copied⟫');}
+  catch(e){prompt('⟪複製這個連結|Copy this link⟫',url);}};
+function toast(msg){let t=$('#toast');if(!t){t=document.createElement('div');t.id='toast';t.setAttribute('role','status');document.body.appendChild(t);}
+  t.textContent=msg;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800);}
 $('#lang').onclick=e=>{e.preventDefault();try{localStorage.setItem('lang','⟪en|zh⟫');}catch(_){}
   /* 本機直接開檔（file://）不會自動補 index.html，要寫完整路徑 */
   location.href='⟪en/|../⟫'+(location.protocol==='file:'?'index.html':'')+location.hash;};
@@ -2156,7 +2266,15 @@ addEventListener('resize',initStars);
 const TB=$('#topbar');function hdr(){return TB.offsetHeight;}
 function setHdr(){document.documentElement.style.setProperty('--hdr',hdr()+'px');}
 if(window.ResizeObserver)new ResizeObserver(setHdr).observe(TB);setHdr();
-function onScroll(){TB.classList.toggle('solid',scrollY>8);}addEventListener('scroll',onScroll,{passive:true});onScroll();
+let lastY=scrollY;
+function onScroll(){const y=scrollY;TB.classList.toggle('solid',y>8);$('#totop').classList.toggle('on',y>innerHeight*.9);
+  if(innerWidth<900){const down=y>lastY+4,up=y<lastY-4;if(down&&y>140){const sw=TB.querySelector('.sw'),cut=sw&&sw.offsetParent?sw.offsetTop-6:TB.offsetHeight;TB.style.transform=`translateY(${-cut}px)`;}
+    else if(up||y<140)TB.style.transform='';}else TB.style.transform='';
+  if(Math.abs(y-lastY)>4)lastY=y;}
+addEventListener('scroll',onScroll,{passive:true});onScroll();
+$('#totop').onclick=()=>scrollTo({top:0,behavior:RM?'auto':'smooth'});
+document.addEventListener('click',e=>{const a=e.target.closest('[data-jump]');if(!a)return;const t=document.querySelector('.view.on '+a.dataset.jump);if(!t)return;
+  e.preventDefault();scrollTo({top:t.getBoundingClientRect().top+scrollY-hdr()-12,behavior:RM?'auto':'smooth'});});
 function moveInd(){const on=$('.tabs-top .tab.on'),ind=$('.tab-ind');if(!ind)return;if(!on||!on.offsetWidth||on.classList.contains('tab-mid')){ind.style.opacity=0;return;}
   ind.style.opacity=1;ind.style.width=(on.offsetWidth-24)+'px';ind.style.transform=`translateX(${on.offsetLeft+12}px)`;}
 addEventListener('resize',moveInd);document.fonts&&document.fonts.ready.then(()=>{moveInd();setHdr();});
@@ -2169,8 +2287,9 @@ const IO=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return
   if(el.id==='sec-history'&&!st.main.played){st.main.played=true;animMain();}}),{threshold:.15});
 $$('.reveal').forEach(e=>IO.observe(e));
 /* 歷史走勢：由左到右逐步繪製 */
-function animMain(){cancelAnimationFrame(animMain.id);if(RM){st.main.p=1;drawMain();return;}
+function animMain(){cancelAnimationFrame(animMain.id);clearTimeout(animMain.to);if(RM||document.hidden){st.main.p=1;drawMain();return;}
   let t0=null;const dur=2600;st.main.p=0;drawMain();
+  animMain.to=setTimeout(()=>{if(st.main.p<1){cancelAnimationFrame(animMain.id);st.main.p=1;drawMain();}},dur+600);  /* 動畫被暫停（分頁在背景等）時直接畫完 */
   animMain.id=requestAnimationFrame(function f(t){t0??=t;const k=Math.min(1,(t-t0)/dur),e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;st.main.p=e;
     const el=$('#c-main'),r=el.querySelector('clipPath rect'),sc=el.querySelector('.scan');
     if(k>=1||!r){st.main.p=1;drawMain();return;}
@@ -2200,7 +2319,7 @@ function route(){const {mode,v,sub}=parseHash();st.mode=mode;
   redraw();}
 function redraw(){const {v}=parseHash();if(v==='overview')drawMain();if(v==='mid')drawMid();if(v==='strat'){drawStrat();drawFut();}if(st.ind.k)drawInd();}
 bind([$('#c-main')],'main',()=>i0of(st.main.years),drawMain);bind([$('#c-mid')],'mid',()=>i0of(st.mid.years),drawMid);(()=>{const el=$('#c-fut');if(!el)return;const mv=ev=>{const r=el.getBoundingClientRect(),cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left,L=+el.dataset.l,R=+el.dataset.r,[t0,t1]=el._x||[0,1];
-  st.fut.hover=t0+Math.max(0,Math.min(1,(cx-L)/(el.clientWidth-L-R)))*(t1-t0);drawFut();};el.onmousemove=mv;el.ontouchmove=mv;el.ontouchstart=mv;el.onmouseleave=()=>{st.fut.hover=null;drawFut();};})();
+  st.fut.hover=t0+Math.max(0,Math.min(1,(cx-L)/(el.clientWidth-L-R)))*(t1-t0);drawFut();};el.onmousemove=mv;hold(el,x=>mv({clientX:x}));el.onmouseleave=()=>{st.fut.hover=null;drawFut();};})();
 bind([$('#c-strat')],'strat',()=>Math.max(0,D.d.findIndex(x=>x>=st.strat.years+'-01-01')),drawStrat);bindSeg();
 addEventListener('hashchange',route);addEventListener('resize',redraw);matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redraw);
 initStars();route();if(!RM)requestAnimationFrame(frame);
