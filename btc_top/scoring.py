@@ -70,27 +70,12 @@ UNAVAILABLE = {
     },
 }
 
-# 僅本機私人版（`run.py --private`）使用的 BGeometrics 指標；條款禁止公開再散布，不可出現在公開版
-PRIVATE_INDICATORS = {
-    "lth_sopr_7d": ("holder_behavior", "LTH-SOPR（7 日均）", "", "score",
-                    "長期持有者賣出的幣，賣價 ÷ 買入成本。明顯高於 1 代表長期持有者正在大量獲利了結。"),
-    "cdd_30d": ("holder_behavior", "CDD（30 日均）", "百萬幣天", "score",
-                "Coin Days Destroyed：被移動的幣數 × 持有天數。老幣大量移動常見於頂部出貨。"),
-    "lth_mvrv": ("holder_behavior", "LTH-MVRV", "", "score",
-                 "長期持有者的平均帳面獲利倍數。越高代表長期持有者越有動機賣出。"),
-}
-PRIVATE_COVERS = {"holder_behavior": ["lth_sopr", "cdd_dormancy"]}  # 私人版已有資料、不再列為 unavailable
+def indicator_defs() -> dict:
+    return INDICATORS
 
 
-def indicator_defs(private: bool = False) -> dict:
-    return INDICATORS | PRIVATE_INDICATORS if private else INDICATORS
-
-
-def unavailable_defs(private: bool = False) -> dict:
-    if not private:
-        return UNAVAILABLE
-    return {cat: {k: v for k, v in items.items() if k not in PRIVATE_COVERS.get(cat, [])}
-            for cat, items in UNAVAILABLE.items()}
+def unavailable_defs() -> dict:
+    return UNAVAILABLE
 
 
 PCT_WINDOW = 1460  # 百分位滾動視窗（天）
@@ -142,7 +127,7 @@ def build_indicators(raw: dict[str, pd.DataFrame]) -> pd.DataFrame:
     # 底部用：Power Law = 價格 ÷ 冪律趨勢價（log 價格對 log 天數的直線；每天只用當天以前的資料擬合，無前視）
     ind["powerlaw"] = powerlaw_ratio(cm["PriceUSD"])
 
-    # 二、持有者行為：公開版無免費可用資料（交易所流量實測方向失效，已移除）；私人版見下方 BGeometrics
+    # 二、持有者行為：無免費、可公開的完整歷史資料（交易所流量實測方向失效，已移除）
 
     # 三、資金流
     if len(raw.get("etf", [])):
@@ -170,14 +155,6 @@ def build_indicators(raw: dict[str, pd.DataFrame]) -> pd.DataFrame:
     # 五、情緒
     if len(raw.get("fear_greed", [])):
         ind["fear_greed_7d"] = raw["fear_greed"]["fear_greed"].reindex(idx).rolling(7, min_periods=5).mean()
-
-    # 私人版：BGeometrics 持有者指標
-    if len(raw.get("bgeo_lth_sopr", [])):
-        ind["lth_sopr_7d"] = raw["bgeo_lth_sopr"]["lthSopr"].reindex(idx).rolling(7, min_periods=5).mean()
-    if len(raw.get("bgeo_cdd", [])):
-        ind["cdd_30d"] = raw["bgeo_cdd"]["cdd"].reindex(idx).rolling(30, min_periods=25).mean() / 1e6
-    if len(raw.get("bgeo_lth_mvrv", [])):
-        ind["lth_mvrv"] = raw["bgeo_lth_mvrv"]["lthMvrv"].reindex(idx)
 
     for k in INDICATORS:
         if k not in ind:
@@ -254,9 +231,9 @@ def score_percentile(pct: pd.Series) -> pd.Series:
     return ((pct - PCT_PIVOT) / (100 - PCT_PIVOT) * 100).clip(lower=0)
 
 
-def compute_heat(ind: pd.DataFrame, private: bool = False):
+def compute_heat(ind: pd.DataFrame):
     """回傳 (指標分數, 指標百分位, 類別分數, 熱度, meta, tops, bottoms)。"""
-    defs = indicator_defs(private)
+    defs = indicator_defs()
     for k in defs:
         if k not in ind:
             ind[k] = np.nan

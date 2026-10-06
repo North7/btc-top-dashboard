@@ -231,15 +231,37 @@ def etf_farside() -> pd.DataFrame:
     return pd.DataFrame({"etf_flow_musd": pd.to_numeric(s, errors="coerce")}).dropna()
 
 
-# ---------- BGeometrics（僅本機私人版使用） ----------
-def bgeometrics(endpoint: str, field: str) -> pd.DataFrame:
-    """BGeometrics 免費 API（近 4 年資料，每小時 10 次、每天 15 次，依 IP 計算）。
+# ---------- 日 K 線（Supertrend 需要最高、最低價） ----------
+def ohlc_bitstamp(since: pd.Timestamp | None = None) -> pd.DataFrame:
+    """Bitstamp BTC/USD 日 K（2011-08 起，公開端點、免金鑰）。"""
+    start = int((since or pd.Timestamp("2011-08-18")).timestamp())
+    rows = []
+    while True:
+        d = _get("https://www.bitstamp.net/api/v2/ohlc/btcusd/", {"step": 86400, "limit": 1000, "start": start})
+        d = d["data"]["ohlc"]
+        rows += d
+        if len(d) < 1000:
+            break
+        start = int(d[-1]["timestamp"]) + 86400
+        time.sleep(0.5)
+    return _ohlc_frame([(int(x["timestamp"]), x["open"], x["high"], x["low"], x["close"]) for x in rows])
 
-    條款禁止公開再散布，因此只在 `run.py --private` 使用，資料存放在不上傳的 private/。
-    """
-    d = _get(f"https://bitcoin-data.com/v1/{endpoint}", retries=1)
-    if isinstance(d, dict):
-        raise RuntimeError(d.get("error", {}).get("message", str(d))[:200])
-    df = pd.DataFrame({"date": pd.to_datetime([x["d"] for x in d]),
-                       field: pd.to_numeric([x.get(field) for x in d], errors="coerce")})
-    return df.set_index("date").dropna().sort_index()
+
+def ohlc_coinbase(days: int = 400) -> pd.DataFrame:
+    """備援：Coinbase BTC-USD 日 K（2015 起；Supertrend 只需近期資料即可收斂）。"""
+    end = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    t, rows = end - timedelta(days=days), []
+    while t < end:
+        t2 = min(t + timedelta(days=299), end)
+        rows += _get("https://api.exchange.coinbase.com/products/BTC-USD/candles",
+                     {"granularity": 86400, "start": t.isoformat(), "end": t2.isoformat()})
+        t = t2
+        time.sleep(0.3)
+    return _ohlc_frame([(int(x[0]), x[3], x[2], x[1], x[4]) for x in rows])  # Coinbase 順序：time, low, high, open, close
+
+
+def _ohlc_frame(rows) -> pd.DataFrame:
+    df = pd.DataFrame(rows, columns=["ts", "open", "high", "low", "close"])
+    df["date"] = pd.to_datetime(df["ts"], unit="s").dt.normalize()
+    df = df.drop(columns="ts").set_index("date").astype(float).sort_index()
+    return df[~df.index.duplicated(keep="last")]

@@ -1,15 +1,11 @@
 """每日執行：抓資料 → 計算分數 → 輸出 data/ 與 docs/。
 
 任何單一資料源失敗都不會讓流程失敗：沿用 data/raw/ 中前一次的資料並標記 stale。
-
-`python run.py --private`：本機私人版。另外抓 BGeometrics 持有者指標（條款禁止公開再散布），
-所有資料與輸出都寫在不上傳的 private/，不會改動公開版的 data/ 與 docs/。
 """
 from __future__ import annotations
 
 import json
 import math
-import shutil
 import sys
 import traceback
 from datetime import datetime, timezone
@@ -19,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 from btc_top import sources
+from btc_top.midterm import compute_midterm
 from btc_top.page import render_page
 from btc_top.scoring import (BOTTOM_STRONG, BOTTOM_WINDOW, CATEGORIES, COLD_GROUP_LABEL, COLD_INDICATORS,
                              COLD_WEIGHTS, HALVINGS, SIGNAL_ALERT, SIGNAL_WINDOW, TIMING_FLAT, TIMING_RAMP,
@@ -27,11 +24,9 @@ from btc_top.scoring import (BOTTOM_STRONG, BOTTOM_WINDOW, CATEGORIES, COLD_GROU
                              unavailable_defs)
 
 ROOT = Path(__file__).parent
-PRIVATE = "--private" in sys.argv
-OUT = ROOT / "private" if PRIVATE else ROOT  # 私人版所有輸出都在 private/
-DATA = OUT / "data"
+DATA = ROOT / "data"
 RAW = DATA / "raw"
-DOCS = OUT / "docs"
+DOCS = ROOT / "docs"
 STALE_DAYS = 3  # 資料日期落後超過幾天視為 stale
 # 只在美股交易日有資料、且當天資金流隔天才公布的來源：改用工作日計算落後天數（避免週末後每週二誤報）
 TRADING_DAY_SOURCES = {"etf"}
@@ -46,17 +41,12 @@ def is_lagging(name: str, last, today: pd.Timestamp) -> bool:
         return int(np.busday_count((last + pd.Timedelta(days=1)).date(), today.date())) > TRADING_DAY_LAG
     return (today - last).days > STALE_DAYS
 
-# 私人版：BGeometrics 端點（每天 3 次請求，免費額度每天 15 次）
-BGEO = {"bgeo_lth_sopr": ("lth-sopr", "lthSopr"), "bgeo_cdd": ("cdd", "cdd"),
-        "bgeo_lth_mvrv": ("lth-mvrv", "lthMvrv")}
-
 INDICATOR_SOURCE = {
     "mvrv_z": "coinmetrics", "nupl": "coinmetrics", "puell": "coinmetrics", "rp_multiple": "coinmetrics",
     "etf_flow_30d": "etf", "etf_flow_momentum": "etf",
     "stable_growth_90d": "stablecoins", "coinbase_premium_7d": "coinbase_premium",
     "funding_7d_ann": "funding", "oi_to_mcap": "open_interest", "basis_ann": "basis",
     "fear_greed_7d": "fear_greed",
-    "lth_sopr_7d": "bgeo_lth_sopr", "cdd_30d": "bgeo_cdd", "lth_mvrv": "bgeo_lth_mvrv",
 }
 
 
@@ -88,24 +78,12 @@ def fetch_all(today: pd.Timestamp):
         "basis": [lambda: sources.basis_binance(since("basis")), sources.basis_okx],
         "coinbase_premium": [lambda: sources.coinbase_premium(30 if len(cb_old) else 1500)],
         "etf": [sources.etf_tftc, sources.etf_farside],
+        "ohlc": [lambda: sources.ohlc_bitstamp(since("ohlc", 5)),
+                 lambda: sources.ohlc_coinbase(30 if len(load_raw("ohlc")) else 2000)],
     }
-    if PRIVATE:
-        for name, (endpoint, field) in BGEO.items():
-            plan[name] = [lambda e=endpoint, f=field: sources.bgeometrics(e, f)]
-    marker = RAW / "bgeo_fetched.txt"
-    bgeo_done_today = marker.exists() and marker.read_text().strip() == str(today.date())
     raw, status = {}, {}
     for name, fetchers in plan.items():
         old = load_raw(name)
-        if name in BGEO and bgeo_done_today and len(old):
-            # 今天已抓過，避免重複執行用光每日額度
-            raw[name] = old
-            last = old.index.max()
-            status[name] = {"fetched": True, "last_date": str(last.date()),
-                            "stale": is_lagging(name, last, today), "available": True,
-                            "errors": [], "note": "今日已抓取，沿用"}
-            print(f"[{name}] 今日已抓取，沿用 最新 {last.date()}")
-            continue
         new, errors = None, []
         for f in fetchers:
             try:
@@ -132,8 +110,6 @@ def fetch_all(today: pd.Timestamp):
         }
         flag = "OK" if fetched else ("沿用舊資料" if len(df) else "無資料")
         print(f"[{name}] {flag} 最新 {status[name]['last_date']} {'; '.join(errors)[:160]}")
-    if PRIVATE and all(status[n]["fetched"] for n in BGEO):
-        marker.write_text(str(today.date()))
     return raw, status
 
 
@@ -147,12 +123,6 @@ def window(center: pd.Timestamp) -> dict:
     d = lambda n: str((center + pd.Timedelta(days=n)).date())
     return {"center": d(0), "full_from": d(-TIMING_FLAT), "full_to": d(TIMING_FLAT),
             "from": d(-TIMING_FLAT - TIMING_RAMP), "to": d(TIMING_FLAT + TIMING_RAMP)}
-
-
-def seed_private():
-    """私人版首次執行：複製公開版的原始資料快取，之後各自更新。"""
-    if PRIVATE and not RAW.exists():
-        shutil.copytree(ROOT / "data" / "raw", RAW)
 
 
 def build_bottom(ind, hist, cold_sc, cold_grp, cold_meta, ribbon_min90, btim, binfo, tim, tops, bottoms, last):
@@ -220,20 +190,20 @@ def build_bottom(ind, hist, cold_sc, cold_grp, cold_meta, ribbon_min90, btim, bi
 
 def main():
     today = pd.Timestamp(datetime.now(timezone.utc).date())
-    seed_private()
     raw, status = fetch_all(today)
     if not len(raw["coinmetrics"]):
         print("Coin Metrics 無任何資料（首次執行且抓取失敗），無法計算。")
         sys.exit(1)
 
     ind = build_indicators(raw)
-    defs = indicator_defs(PRIVATE)
-    scores, pcts, cat_scores, heat, meta, tops, bottoms = compute_heat(ind, PRIVATE)
+    defs = indicator_defs()
+    scores, pcts, cat_scores, heat, meta, tops, bottoms = compute_heat(ind)
     tim, tinfo = compute_timing(ind.index, ind["price"], tops)
     signal = top_signal(heat, tim["timing"])
     cold_sc, cold_grp, cold, cold_meta, ribbon_min90 = compute_cold(ind, tops, bottoms)
     btim, binfo = compute_bottom_timing(ind.index, ind["price"], tops, bottoms)
     bsig = bottom_signal(cold, btim["timing"])
+    mid, mid_info = compute_midterm(ind, raw.get("ohlc", pd.DataFrame()), today)
 
     # ---- 歷史時間序列 ----
     ind.to_csv(DATA / "indicators.csv", index_label="date", float_format="%.6g")
@@ -247,6 +217,7 @@ def main():
     hist = hist.join(cold_grp.add_prefix("coldgrp_")).join(cold_sc.add_prefix("coldscore_"))
     hist["hash_ribbon_min90"] = ribbon_min90
     hist = hist.join(cat_scores.add_prefix("cat_")).join(scores.add_prefix("score_"))
+    hist = hist.join(mid.drop(columns=["dip_hits", "hot_hits"]).astype(float).add_prefix("mid_"))
     hist = hist.dropna(subset=["heat"]).loc["2011-01-01":]
     hist.to_csv(DATA / "scores.csv", index_label="date", float_format="%.4g")
 
@@ -275,7 +246,7 @@ def main():
                 "as_of": str(as_of.date()), "stale": bool(stale), "status": "ok",
                 **{k: (r(v) if isinstance(v, float) else v) for k, v in meta[key].items()},
             }
-        for key, why in unavailable_defs(PRIVATE).get(cat, {}).items():
+        for key, why in unavailable_defs().get(cat, {}).items():
             inds[key] = {"label": why.split("（")[0], "role": "score", "status": "unavailable", "reason": why}
         sc = cat_scores[cat].iloc[-1]
         scored = [v for v in inds.values() if v["status"] == "ok" and v["role"] == "score"]
@@ -334,6 +305,7 @@ def main():
         "cold_score": bottom["cold_score"],
         "bottom_timing_score": bottom["timing"]["score"],
         "bottom": bottom,
+        "midterm": mid_info,
         "categories": categories,
         "cycle_tops": [str(x.date()) for x in tops],
         "cycle_bottoms": [str(b.date()) for b in bottoms],
@@ -348,15 +320,12 @@ def main():
             "bottom_level": f"none < {BOTTOM_WINDOW} ≤ zone（底部區）< {BOTTOM_STRONG} ≤ strong（強烈底部）",
         },
         "disclaimer": "僅供參考，不構成投資建議。",
-        "private": PRIVATE,
     }
     DOCS.mkdir(parents=True, exist_ok=True)
     (DOCS / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2))
-    render_page(latest, hist, ind, DOCS / "index.html", defs, PRIVATE, lang="zh")
-    render_page(latest, hist, ind, DOCS / "en" / "index.html", defs, PRIVATE, lang="en")
+    render_page(latest, hist, ind, DOCS / "index.html", defs, lang="zh")
+    render_page(latest, hist, ind, DOCS / "en" / "index.html", defs, lang="en")
     (DOCS / ".nojekyll").touch()
-    if PRIVATE:  # 私人版頁面也需要字體檔
-        shutil.copytree(ROOT / "docs" / "fonts", DOCS / "fonts", dirs_exist_ok=True)
     print(f"底部訊號 {latest['bottom_signal']}（{latest['bottom_level']}） 冷度 {latest['cold_score']} "
           f"底部時機 {latest['bottom_timing_score']}　{bottom['cycle_test']['verdict']}")
     print(f"完成：{latest['date']} 頂部訊號 {latest['top_signal']}（{latest['signal_level']}） "

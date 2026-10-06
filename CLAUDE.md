@@ -74,8 +74,7 @@ MVRV Z-score、NUPL、Puell Multiple、Realized Price 倍數（價格 / 實現�
 - 頂部訊號（top_signal）= 熱度 7 日均 × 時機 ÷ 100。≥ 50 頂部窗口、≥ 70 高度警戒。
 - 持有者行為（公開版）：交易所淨流入、交易所餘額變化在 2021、2025 頂部為 0、方向失效，已移除；
   類別標記 unavailable、頁面不顯示，權重按比例分給其他類，待 v2 接付費數據。
-- 本機私人版（`run.py --private`）：BGeometrics 免費 API 的 LTH-SOPR、CDD、LTH-MVRV 納入持有者行為計分。
-  其條款禁止公開再散布，資料與輸出只能放在 `private/`（gitignore），絕不可寫入公開的 data/、docs/ 或 commit。
+- 私人版（BGeometrics 持有者指標）已於 2026-10 試算後移除：免費資料只有近 4 年，且讓 2025 頂部訊號變差。
 - 已知限制：依賴約四年週期延續；訊號是數個月的窗口而非日期；2013 週期較短抓不到；歷史為樣本內計算。
 
 ## 底部訊號（2026-10 加入，經使用者同意）
@@ -89,12 +88,21 @@ MVRV Z-score、NUPL、Puell Multiple、Realized Price 倍數（價格 / 實現�
 - `bottom.cycle_test` 追蹤本輪低點是否為週期底部，判定日為兩個底部滿分窗口都結束的日期。
 - 使用者個人持倉、買賣決定等資訊不可寫入本倉庫任何檔案。
 
+## 中期狀態（2026-10 加入，經使用者同意）
+用途：看清目前的市場狀態（趨勢、牛市回調、短線過熱），證據比頂部／底部訊號弱，頁面須標示「僅供參考」。程式在 `btc_top/midterm.py`。
+- 獨立的「中期狀態」頁（#mid），不屬於頂部或底部：導航最後、以分隔線隔開的不編號膠囊按鈕（01–04 編號分頁都是頂底相關）；
+  不隨模式切換、在此頁隱藏模式切換，使用中性藍紫配色。
+- 趨勢環境：價格相對 200 日、20 週、50 日均線；週線 Supertrend（ATR 10 × 3，Bitstamp 日 K 為主、Coinbase 備援，只用已收完的週 K）。
+- 牛市回調觀察／短線過熱：各 5 個慣例門檻條件，價格在 200 日均線之上且符合 ≥ 3 項才觸發；門檻不可為了歷史結果最佳化。
+- 研究結論：過熱不是可靠賣訊號；牛市回調有小幅優勢但次數少；熊市超賣不可靠；Supertrend 屬確認型。
+
 ## 輸出
 - `top_signal`：頂部訊號（主要數字）；`signal_level`：`none` / `window`（≥ 50）/ `alert`（≥ 70）
 - `heat_score`：熱度 0–100 加權總分；`composite_score` 保留為同值（相容舊欄位）
 - `timing_score`：時機 0–100；`timing`：天數、本輪低點、預估頂部窗口日期
 - `hot_categories`：類別分數 ≥ 80 的類別數（0–5）
 - `bottom_signal`、`bottom_level`、`cold_score`、`bottom_timing_score`、`bottom`（冷度組成、底部時機、週期結構驗證）
+- `midterm`：中期狀態（regime、均線距離、週線 Supertrend、dip／hot 條件清單與歷史統計）
 - `zone`：`cold` / `warm` / `hot` / `top_zone`（top_zone 條件：頂部訊號 ≥ 50；否則依熱度 cold < 40 ≤ warm < 65 ≤ hot）
 - 各類別分數、各指標原始值與分數、資料日期、stale 與 unavailable 標記
 
