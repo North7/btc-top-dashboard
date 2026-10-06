@@ -1,12 +1,12 @@
 {
   "date": "2026-10-06",
-  "generated_at": "2026-10-06T02:18:19Z",
+  "generated_at": "2026-10-06T04:49:32Z",
   "price_usd": 85834.53,
   "price_date": "2026-10-05",
   "top_signal": 0.0,
   "signal_level": "none",
-  "heat_score": 45.3,
-  "composite_score": 45.3,
+  "heat_score": 44.8,
+  "composite_score": 44.8,
   "timing_score": 0.0,
   "hot_categories": 0,
   "zone": "warm",
@@ -82,7 +82,7 @@
         "group": "估值",
         "unit": "x",
         "description": "低於 1 代表價格跌破市場平均持幣成本。過去三次底部為 0.56、0.69、0.75。",
-        "value": 1.6111,
+        "value": 1.5967,
         "score": 0.0,
         "method": "cycle_bottom",
         "expected_bottom": 0.8889,
@@ -98,7 +98,7 @@
         "group": "估值",
         "unit": "",
         "description": "淨未實現損益。過去三次底部都轉為負值（整體市場帳面虧損）。",
-        "value": 0.3793,
+        "value": 0.3737,
         "score": 0.0,
         "method": "cycle_bottom",
         "expected_bottom": -0.0683,
@@ -120,8 +120,8 @@
         "expected_bottom": 0.5939,
         "neutral": 1.0,
         "past_bottoms": {
-          "2015-01-14": 0.3123250950141824,
-          "2018-12-15": 0.3893759732132719,
+          "2015-01-14": 0.3123250950141825,
+          "2018-12-15": 0.38937597321327183,
           "2022-11-09": 0.4786260405008019
         }
       },
@@ -162,7 +162,7 @@
         "expected_bottom": 0.5181,
         "neutral": 1.0,
         "past_bottoms": {
-          "2015-01-14": 0.24087807889641405,
+          "2015-01-14": 0.24087807889641602,
           "2018-12-15": 0.48243284320091806,
           "2022-11-09": 0.35963496697829206
         }
@@ -308,7 +308,7 @@
         {
           "key": "funding",
           "threshold": "<= 0",
-          "value": 4.3524,
+          "value": 4.1466,
           "met": false
         }
       ],
@@ -360,7 +360,7 @@
         {
           "key": "funding",
           "threshold": "> p90 (1y)",
-          "value": 4.3524,
+          "value": 4.1466,
           "met": false
         }
       ],
@@ -381,11 +381,172 @@
       }
     }
   },
+  "strategy": {
+    "rules": {
+      "arm_top_signal": 50,
+      "arm_top_timing": 50,
+      "buy_bottom_signal": 50,
+      "fee": 0.001,
+      "supertrend": "weekly ATR 10 x 3"
+    },
+    "as_of": "2026-10-05",
+    "state": "holding",
+    "armed": false,
+    "since": "2026-06-09",
+    "since_price": 61640.46,
+    "now": {
+      "top_signal": 0.0,
+      "top_timing": 0.0,
+      "bottom_signal": 21.6,
+      "supertrend": "up"
+    },
+    "backtest": {
+      "start": "2014",
+      "strategy": 857.48,
+      "hold": 114.08,
+      "ratio": 7.52,
+      "cagr": 0.6979,
+      "cagr_hold": 0.4496,
+      "max_dd": -0.7432,
+      "max_dd_hold": -0.8378,
+      "time_in": 0.7241
+    },
+    "by_start": [
+      {
+        "start": "2014",
+        "strategy": 857.48,
+        "hold": 114.08,
+        "ratio": 7.52,
+        "cagr": 0.6979,
+        "cagr_hold": 0.4496,
+        "max_dd": -0.7432,
+        "max_dd_hold": -0.8378,
+        "time_in": 0.7241
+      },
+      {
+        "start": "2016",
+        "strategy": 643.37,
+        "hold": 197.47,
+        "ratio": 3.26,
+        "cagr": 0.824,
+        "cagr_hold": 0.6343,
+        "max_dd": -0.7432,
+        "max_dd_hold": -0.8378,
+        "time_in": 0.7993
+      },
+      {
+        "start": "2018",
+        "strategy": 20.77,
+        "hold": 6.37,
+        "ratio": 3.26,
+        "cagr": 0.4139,
+        "cagr_hold": 0.2355,
+        "max_dd": -0.7051,
+        "max_dd_hold": -0.8138,
+        "time_in": 0.7534
+      },
+      {
+        "start": "2020",
+        "strategy": 24.63,
+        "hold": 11.97,
+        "ratio": 2.06,
+        "cagr": 0.6064,
+        "cagr_hold": 0.4437,
+        "max_dd": -0.6566,
+        "max_dd_hold": -0.7667,
+        "time_in": 0.7972
+      },
+      {
+        "start": "2022",
+        "strategy": 5.52,
+        "hold": 1.8,
+        "ratio": 3.06,
+        "cagr": 0.4319,
+        "cagr_hold": 0.1321,
+        "max_dd": -0.3549,
+        "max_dd_hold": -0.6687,
+        "time_in": 0.7924
+      }
+    ],
+    "trades": [
+      {
+        "date": "2014-03-03",
+        "action": "sell",
+        "why": "st_down",
+        "price": 676.51,
+        "next_price_change": -0.5674
+      },
+      {
+        "date": "2015-07-13",
+        "action": "buy",
+        "why": "st_up",
+        "price": 292.65,
+        "next_price_change": 22.4052
+      },
+      {
+        "date": "2018-02-05",
+        "action": "sell",
+        "why": "st_down",
+        "price": 6849.54,
+        "next_price_change": -0.3697
+      },
+      {
+        "date": "2018-11-20",
+        "action": "buy",
+        "why": "bsig",
+        "price": 4317.53,
+        "next_price_change": 7.9473
+      },
+      {
+        "date": "2021-05-24",
+        "action": "sell",
+        "why": "st_down",
+        "price": 38630.41,
+        "next_price_change": 0.483
+      },
+      {
+        "date": "2021-10-11",
+        "action": "buy",
+        "why": "st_up",
+        "price": 57289.19,
+        "next_price_change": -0.2701
+      },
+      {
+        "date": "2022-01-10",
+        "action": "sell",
+        "why": "st_down",
+        "price": 41816.95,
+        "next_price_change": -0.5143
+      },
+      {
+        "date": "2022-06-16",
+        "action": "buy",
+        "why": "bsig",
+        "price": 20310.18,
+        "next_price_change": 3.5254
+      },
+      {
+        "date": "2025-11-17",
+        "action": "sell",
+        "why": "st_down",
+        "price": 91911.47,
+        "next_price_change": -0.3293
+      },
+      {
+        "date": "2026-06-09",
+        "action": "buy",
+        "why": "bsig",
+        "price": 61640.46,
+        "next_price_change": null
+      }
+    ],
+    "projected_arm": "2029-02-01"
+  },
   "categories": {
     "onchain_valuation": {
       "label": "鏈上估值",
       "weight": 0.35,
-      "score": 74.8,
+      "score": 73.8,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -394,10 +555,10 @@
           "unit": "",
           "role": "score",
           "description": "市值與實現市值（所有幣最後移動時價格的總和）的差距，以標準差衡量。越高代表整體未實現獲利越大。",
-          "value": 1.0705,
-          "score": 67.2,
-          "percentile": 45.3,
-          "as_of": "2026-10-04",
+          "value": 1.0462,
+          "score": 65.9,
+          "percentile": 44.7,
+          "as_of": "2026-10-05",
           "stale": false,
           "status": "ok",
           "method": "cycle",
@@ -407,7 +568,7 @@
             "2013-12-04": 7.704061973442023,
             "2017-12-16": 9.354234932070232,
             "2021-11-08": 3.5338955722930834,
-            "2025-10-06": 2.5298647876421483
+            "2025-10-06": 2.529864787642148
           }
         },
         "nupl": {
@@ -415,10 +576,10 @@
           "unit": "",
           "role": "score",
           "description": "淨未實現損益占市值比例。接近 0.75 以上歷來是極度貪婪區。",
-          "value": 0.3793,
-          "score": 77.3,
-          "percentile": 46.2,
-          "as_of": "2026-10-04",
+          "value": 0.3737,
+          "score": 76.3,
+          "percentile": 45.5,
+          "as_of": "2026-10-05",
           "stale": false,
           "status": "ok",
           "method": "cycle",
@@ -450,10 +611,10 @@
           "unit": "x",
           "role": "score",
           "description": "價格 ÷ 實現價格（市場平均持幣成本）。數學上等於 MVRV。",
-          "value": 1.6111,
-          "score": 81.1,
-          "percentile": 46.2,
-          "as_of": "2026-10-04",
+          "value": 1.5967,
+          "score": 79.5,
+          "percentile": 45.5,
+          "as_of": "2026-10-05",
           "stale": false,
           "status": "ok",
           "method": "cycle",
@@ -463,7 +624,7 @@
             "2013-12-04": 4.718179179999999,
             "2017-12-16": 4.43076633,
             "2021-11-08": 2.854649564891,
-            "2025-10-06": 2.287145426879909
+            "2025-10-06": 2.2871454268799094
           }
         }
       },
@@ -537,7 +698,7 @@
           "unit": "%",
           "role": "score",
           "description": "穩定幣總供給 90 日成長率，代表場內可用的新資金。",
-          "value": 1.9023,
+          "value": 1.8946,
           "score": 10.7,
           "percentile": 42.0,
           "as_of": "2026-10-06",
@@ -551,9 +712,9 @@
           "unit": "%",
           "role": "score",
           "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
-          "value": -0.0269,
+          "value": -0.0251,
           "score": 0.0,
-          "percentile": 30.2,
+          "percentile": 31.4,
           "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
@@ -566,7 +727,7 @@
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 5.4,
+      "score": 5.0,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -575,9 +736,9 @@
           "unit": "%",
           "role": "score",
           "description": "永續合約多方付給空方的費率。越高代表槓桿做多越擁擠。",
-          "value": 3.7405,
+          "value": 3.1696,
           "score": 0.0,
-          "percentile": 28.5,
+          "percentile": 24.5,
           "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
@@ -589,9 +750,9 @@
           "unit": "%",
           "role": "score",
           "description": "全市場 BTC 合約未平倉量占市值比例，代表槓桿規模。",
-          "value": 0.0,
+          "value": 0.1857,
           "score": 0.0,
-          "percentile": 1.4,
+          "percentile": 17.5,
           "as_of": "2026-10-05",
           "stale": false,
           "status": "ok",
@@ -603,9 +764,9 @@
           "unit": "%",
           "role": "score",
           "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
-          "value": 5.0247,
-          "score": 16.2,
-          "percentile": 45.5,
+          "value": 4.9895,
+          "score": 15.1,
+          "percentile": 44.8,
           "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",

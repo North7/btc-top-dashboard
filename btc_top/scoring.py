@@ -91,9 +91,10 @@ SIGNAL_WINDOW = 50  # 頂部訊號 ≥ 此值：頂部窗口
 SIGNAL_ALERT = 70   # 頂部訊號 ≥ 此值：高度警戒
 
 
-def find_cycles(price: pd.Series):
-    """回傳 (頂部日期列表, 底部日期列表)。頂部 = 指定月份最高收盤日；底部 = 兩頂之間最低收盤日。"""
-    tops = [price[m].idxmax() for m in TOP_MONTHS]
+def find_cycles(price: pd.Series, top_months=None):
+    """回傳 (頂部日期列表, 底部日期列表)。頂部 = 指定月份最高收盤日；底部 = 兩頂之間最低收盤日。
+    top_months 可指定只用部分頂部（策略逐輪回測用：只用當時已發生的頂部）。"""
+    tops = [price[m].idxmax() for m in (top_months or TOP_MONTHS)]
     bottoms = [price[tops[i]:tops[i + 1]].idxmin() for i in range(len(tops) - 1)]
     return tops, bottoms
 
@@ -231,13 +232,13 @@ def score_percentile(pct: pd.Series) -> pd.Series:
     return ((pct - PCT_PIVOT) / (100 - PCT_PIVOT) * 100).clip(lower=0)
 
 
-def compute_heat(ind: pd.DataFrame):
+def compute_heat(ind: pd.DataFrame, top_months=None):
     """回傳 (指標分數, 指標百分位, 類別分數, 熱度, meta, tops, bottoms)。"""
     defs = indicator_defs()
     for k in defs:
         if k not in ind:
             ind[k] = np.nan
-    tops, bottoms = find_cycles(ind["price"].dropna())
+    tops, bottoms = find_cycles(ind["price"].dropna(), top_months)
     scores = pd.DataFrame(index=ind.index)
     pcts = pd.DataFrame(index=ind.index)
     meta = {}
@@ -391,6 +392,10 @@ def compute_cold(ind: pd.DataFrame, tops, bottoms):
             continue
         bot_pts = [(i + 0.5, s.get(b)) for i, b in enumerate(bottoms) if pd.notna(s.get(b))]
         top_pts = [(i, s.get(t)) for i, t in enumerate(tops) if pd.notna(s.get(t))]
+        if not bot_pts or not top_pts:  # 已知頂部／底部的指標資料不足（僅逐輪回測的早期會發生）
+            scores[key] = np.nan
+            meta[key] = {"method": None}
+            continue
         bot = k.map(lambda i: _fit(*zip(*bot_pts), i - 0.5))
         top = k.map(lambda i: _fit(*zip(*top_pts), i))
         neutral = (bot + top) / 2 if key not in COLD_NEUTRAL_FIXED else pd.Series(COLD_NEUTRAL_FIXED[key], index=s.index)

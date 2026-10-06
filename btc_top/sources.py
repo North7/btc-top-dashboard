@@ -101,12 +101,28 @@ def funding_okx() -> pd.DataFrame:
 
 
 # ---------- 未平倉量（USD）：OKX 全市場 BTC 合約為主，Binance 備援 ----------
+# OKX 全 BTC 合約未平倉（舊端點）自 2026-10-02 起回傳 0；改用 BTC-USDT、BTC-USD 永續合約加總。
+# 永續合約約為全部合約的 94.5%（2026-06–10 重疊 96 天的中位比例），乘上校正係數以延續歷史序列。
+OKX_SWAP_TO_ALL = 1 / 0.945
+
+
+def open_interest_okx_swaps() -> pd.DataFrame:
+    parts = []
+    for inst in ("BTC-USDT-SWAP", "BTC-USD-SWAP"):
+        d = _get("https://www.okx.com/api/v5/rubik/stat/contracts/open-interest-history",
+                 {"instId": inst, "period": "1D", "limit": 100})["data"]
+        parts.append(pd.Series({_ms_to_date(x[0]): float(x[3]) for x in d}))
+    s = (parts[0] + parts[1]).dropna()
+    s = s[s > 0] * OKX_SWAP_TO_ALL
+    return pd.DataFrame({"oi_usd": s}).rename_axis("date").sort_index()
+
+
 def open_interest_okx() -> pd.DataFrame:
     d = _get("https://www.okx.com/api/v5/rubik/stat/contracts/open-interest-volume",
              {"ccy": "BTC", "period": "1D"})["data"]
     df = pd.DataFrame({"date": [_ms_to_date(x[0]) for x in d],
                        "oi_usd": [float(x[1]) for x in d]})
-    return df.set_index("date").sort_index()
+    return df[df["oi_usd"] > 0].set_index("date").sort_index()  # 回傳 0 代表端點失效，不採用
 
 
 def open_interest_binance() -> pd.DataFrame:

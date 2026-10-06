@@ -162,7 +162,7 @@ def _series(hist: pd.DataFrame, ind: pd.DataFrame, defs: dict) -> dict:
     for k, (grp, label, col, unit, desc) in COLD_INDICATORS.items():
         cols["v_" + k] = (hist[col] if col in hist else ind[col].reindex(hist.index))
         cols["s_" + k] = hist["coldscore_" + k]
-    for k, col in (("ma50", "mid_ma50"), ("ma200", "mid_ma200"), ("ma20w", "mid_ma20w"), ("stl", "mid_st_line"), ("std", "mid_st_dir")):
+    for k, col in (("seq", "strat_eq"), ("sbh", "strat_bh"), ("ma50", "mid_ma50"), ("ma200", "mid_ma200"), ("ma20w", "mid_ma20w"), ("stl", "mid_st_line"), ("std", "mid_st_dir")):
         if col in hist:
             cols[k] = hist[col]
     cols["v_days_since_halving"] = hist["days_since_halving"]
@@ -440,6 +440,126 @@ def _midterm(latest: dict) -> str:
 Built from an October 2026 indicator study: 48 indicators, observed on 2014–2019 and tested on 2020–2026. Single overheating readings (RSI, distance from moving averages, greed) were on average followed by further gains, and combined overheating had mixed outcomes — neither is a reliable sell signal; oversold combinations in bull markets showed a small edge but few occurrences.
 The weekly Supertrend (ATR 10 × 3, from Bitstamp daily candles, completed weeks only) flips about once a year with few whipsaws, but it confirms rather than predicts — by the time it turns down, price is usually weeks past the high. Thresholds are conventional values, not fitted to history. For reference only — not investment advice.⟫</p>
   </div>"""
+
+
+WHY = {"st_down": "⟪週線 ST 轉空|Weekly ST down⟫", "st_up": "⟪週線 ST 轉多|Weekly ST up⟫",
+       "bsig": "⟪底部訊號 ≥ 50|Bottom signal ≥ 50⟫"}
+
+
+def _x(v):
+    return "—" if v is None else f"{v:,.1f}×" if v < 100 else f"{v:,.0f}×"
+
+
+def _strategy(latest: dict) -> str:
+    """週期策略頁：目前狀態、規則、模擬資金曲線、各起點績效、交易紀錄、限制。"""
+    g = latest.get("strategy")
+    if not g:
+        return ""
+    now, m = g["now"], latest.get("midterm", {}).get("supertrend_weekly") or {}
+    hold = g["state"] == "holding"
+    line = f'${m["line"]:,.0f}' if m.get("line") else "—"
+    if hold and not g["armed"]:
+        state, cls = "⟪持有中|Holding⟫", "hold"
+        nxt = (f"⟪下一步：進入警戒（頂部訊號 ≥ 50 或頂部時機 ≥ 50）。依時鐘推算最早約 <b>{g.get('projected_arm') or '—'}</b>（假設本輪低點不再被跌破）。"
+               f"進入警戒後，要等週線 Supertrend 轉空才賣出。|Next: enter alert (top signal ≥ 50 or top timing ≥ 50). By the cycle clocks the earliest is about "
+               f"<b>{g.get('projected_arm') or '—'}</b> (assuming this cycle's low holds). Once on alert, it sells only when the weekly Supertrend turns down.⟫")
+    elif hold:
+        state, cls = "⟪持有中・警戒|Holding · on alert⟫", "alert"
+        nxt = (f"⟪警戒中：週線 Supertrend 轉空就全部賣出。目前 Supertrend 支撐 {line}。|On alert: sells everything when the weekly Supertrend turns down. "
+               f"Current Supertrend support: {line}.⟫")
+    else:
+        state, cls = "⟪空手|In cash⟫", "cash"
+        nxt = (f"⟪等待買回：底部訊號 ≥ 50（目前 {now['bottom_signal']:.0f}），或週線 Supertrend 轉多（目前壓力 {line}）。|Waiting to buy back: bottom signal ≥ 50 "
+               f"(now {now['bottom_signal']:.0f}) or the weekly Supertrend turning up (resistance {line}).⟫")
+    st_txt = "⟪多方|Up⟫" if now["supertrend"] == "up" else "⟪空方|Down⟫"
+    act = ("買進", "bought") if hold else ("賣出", "sold")
+    since = (f"⟪自 {g['since']} 以 ${g['since_price']:,.0f} {act[0]}|{act[1]} on {g['since']} at ${g['since_price']:,.0f}⟫"
+             if g.get("since") else "")
+    status = f"""
+    <div class="card st-card st-{cls}">
+      <div class="eyebrow">STATUS · {g['as_of']}</div>
+      <div class="st-big">{state}</div>
+      <p class="st-since">{since}</p>
+      <div class="st-grid">
+        <div><span>⟪頂部訊號|Top signal⟫</span><b>{now['top_signal']:.0f}<small>/50</small></b></div>
+        <div><span>⟪頂部時機|Top timing⟫</span><b>{now['top_timing']:.0f}<small>/50</small></b></div>
+        <div><span>⟪底部訊號|Bottom signal⟫</span><b>{now['bottom_signal']:.0f}<small>/50</small></b></div>
+        <div><span>⟪週線 Supertrend|Weekly Supertrend⟫</span><b class="{'up' if now['supertrend'] == 'up' else 'dn'}">{st_txt}</b></div>
+      </div>
+      <p class="st-next">{nxt}</p>
+    </div>"""
+    rules = """
+    <div class="card st-rules">
+      <div class="eyebrow">RULES</div><h3>⟪規則|Rules⟫</h3>
+      <ol>
+        <li><b>⟪警戒|Alert⟫</b>⟪持有中，頂部訊號 ≥ 50 或頂部時機 ≥ 50 → 進入警戒（保持到賣出）。|While holding, top signal ≥ 50 or top timing ≥ 50 → on alert (stays until a sale).⟫</li>
+        <li><b>⟪賣出|Sell⟫</b>⟪警戒中，週線 Supertrend（ATR 10 × 3）由多轉空 → 全部賣出。|On alert, the weekly Supertrend (ATR 10 × 3) turns down → sell everything.⟫</li>
+        <li><b>⟪買回|Buy back⟫</b>⟪空手時，底部訊號 ≥ 50 或週線 Supertrend 由空轉多 → 全部買回。|In cash, bottom signal ≥ 50 or the weekly Supertrend turns up → buy everything back.⟫</li>
+      </ol>
+      <p class="muted small">⟪頂部訊號與時機會提早亮，所以只用來「進入警戒」；真正賣出要等週線趨勢確認轉空。門檻固定為 50，未針對歷史最佳化；40／50／60 的 27 種組合回測都勝過持有。|The top signal and timing light up early, so they only put the strategy on alert; the actual sale waits for the weekly trend to confirm. Thresholds are fixed at 50, not fitted to history; all 27 combinations of 40/50/60 beat holding in backtests.⟫</p>
+    </div>"""
+    bt = g["backtest"]
+    rows = "".join(
+        f"<tr><td>{x['start']}</td><td><b>{_x(x['strategy'])}</b></td><td>{_x(x['hold'])}</td><td><b class='st-ratio'>{x['ratio']:.1f}×</b></td>"
+        f"<td class='wd'>{_spct(x['cagr'], False)}</td><td class='wd'>{_spct(x['cagr_hold'], False)}</td><td>{_spct(x['max_dd'], False)}</td><td class='wd'>{_spct(x['max_dd_hold'], False)}</td></tr>"
+        for x in g["by_start"])
+    perf = f"""
+    <div class="card">
+      <div class="card-head"><div><div class="eyebrow">PERFORMANCE</div><h3>⟪各起點績效|Performance by start year⟫</h3></div></div>
+      <div class="scroll"><table class="data fit"><thead><tr><th>⟪起點|Start⟫</th><th>⟪策略|Strategy⟫</th><th>⟪持有|Hold⟫</th><th>⟪策略／持有|Strat / hold⟫</th>
+        <th class="wd">⟪策略年化|Strat CAGR⟫</th><th class="wd">⟪持有年化|Hold CAGR⟫</th><th>⟪策略最大回撤|Strat max DD⟫</th><th class="wd">⟪持有最大回撤|Hold max DD⟫</th></tr></thead><tbody>{rows}</tbody></table></div>
+      <p class="muted small" style="margin:8px 0 0">⟪從各年 1 月 1 日起投入 1 單位，至今的資金倍數。手續費每次 0.1%，空手時現金不計利息。|Growth of 1 unit invested on January 1 of each year to today. 0.1% fee per trade; cash earns nothing.⟫</p>
+    </div>"""
+    trs = []
+    for t in g["trades"]:
+        chg = t.get("next_price_change")
+        if t["action"] == "sell":
+            note = ("—" if chg is None else
+                    (f"⟪買回便宜 {_spct(-chg, False)}|rebought {_spct(-chg, False)} lower⟫" if chg < 0 else f"⟪買回貴 {_spct(chg, False)}|rebought {_spct(chg, False)} higher⟫"))
+        else:
+            pc = f"{chg * 100:+,.0f}%".replace("-", "−") if chg is not None else ""
+            note = "⟪持有中|holding⟫" if chg is None else f"⟪持有 {pc}|held {pc}⟫"
+        bad = t["action"] == "sell" and chg is not None and chg > 0
+        trs.append(f"<tr class='{'bad' if bad else ''}'><td>{t['date']}<small>{WHY.get(t['why'], t['why'])}</small></td>"
+                   f"<td><span class='act {t['action']}'>{'⟪賣出|Sell⟫' if t['action'] == 'sell' else '⟪買回|Buy⟫'}</span></td>"
+                   f"<td>${t['price']:,.0f}</td><td>{note}</td></tr>")
+    trades = f"""
+    <div class="card">
+      <div class="card-head"><div><div class="eyebrow">TRADES</div><h3>⟪歷史交易|Past trades⟫</h3></div></div>
+      <div class="scroll"><table class="data fit st-trades"><thead><tr><th>⟪日期・原因|Date · trigger⟫</th><th>⟪動作|Action⟫</th><th>⟪價格|Price⟫</th><th>⟪結果|Outcome⟫</th></tr></thead>
+      <tbody>{''.join(trs)}</tbody></table></div>
+      <p class="muted small" style="margin:8px 0 0">⟪ST = Supertrend。紅底為賣錯的一次（2021-05 中段回調被誤判，買回時更貴）。|ST = Supertrend. The highlighted row is a bad sale (the 2021-05 mid-cycle dip was misread; it bought back higher).⟫</p>
+    </div>"""
+    limits = """
+    <div class="card st-limits">
+      <div class="eyebrow">LIMITATIONS</div><h3>⟪限制|Limitations⟫</h3>
+      <ul>
+        <li>⟪不是賣在頂部：要等趨勢確認，過去賣出時已從頂部跌了 26–65%。超額報酬主要來自避開熊市、在接近底部時買回。|It does not sell the top: it waits for trend confirmation, and past sales came 26–65% below the peak. The edge comes from sitting out bear markets and buying back near bottoms.⟫</li>
+        <li>⟪會犯錯：2021-05 誤賣一次。持有期間仍可能經歷 −70% 等級的回撤。|It makes mistakes (a bad sale in 2021-05), and drawdowns of around −70% can still happen while holding.⟫</li>
+        <li>⟪樣本少：只有 4 次熊市可驗證；若四年週期不再延續，策略可能失效。|Small sample: only four bear markets to test; if the four-year cycle breaks, the strategy may fail.⟫</li>
+        <li>⟪逐輪回測：每一輪只用當時已發生的頂部與底部設定參數（不偷看未來）；最近一輪即網站目前的訊號。|Walk-forward: each cycle uses only the tops and bottoms known at the time (no look-ahead); the latest cycle uses the site's current signals.⟫</li>
+        <li>⟪模擬結果，不代表實際交易；僅供參考，不構成投資建議。|Simulated results, not actual trading. For reference only — not investment advice.⟫</li>
+      </ul>
+    </div>"""
+    return f"""
+  <div class="view-head"><div class="sec-n">⟪週期策略|CYCLE STRATEGY⟫ · ⟪回測模擬|BACKTEST⟫</div><h2>⟪週期|Cycle⟫ <span>⟪策略|strategy⟫</span></h2>
+    <p>⟪「警戒 + 趨勢確認」：用頂部／底部訊號判斷週期位置，用週線 Supertrend 確認趨勢。逐輪回測自 2014 年起 {_x(bt['strategy'])}，同期持有 {_x(bt['hold'])}。|“Alert + trend confirmation”: the top/bottom signals locate the cycle and the weekly Supertrend confirms the trend. Walk-forward backtest since 2014: {_x(bt['strategy'])} vs {_x(bt['hold'])} for holding.⟫</p></div>
+  <div class="st-top">{status}{rules}</div>
+  <div class="card st-chart">
+    <div class="card-head"><div><div class="eyebrow">EQUITY</div><h3>⟪模擬資金曲線|Simulated equity⟫</h3></div>
+      <div class="seg" data-g="strat"><button data-y="2014" class="on">2014</button><button data-y="2018">2018</button><button data-y="2022">2022</button></div></div>
+    <div class="tip" id="tip-strat"></div>
+    <svg class="chart" id="c-strat" height="380" role="img" aria-label="⟪策略與持有的資金曲線|Strategy vs hold equity⟫"></svg>
+    <div class="legend">
+      <span class="static"><i style="background:var(--strat)"></i>⟪策略|Strategy⟫</span>
+      <span class="static"><i style="background:var(--price)"></i>⟪持續持有|Buy &amp; hold⟫</span>
+      <span class="static"><i class="dash" style="border-top-color:var(--s-sig)"></i>⟪賣出|Sell⟫</span>
+      <span class="static"><i class="dash" style="border-top-color:var(--s-bot)"></i>⟪買回|Buy⟫</span>
+    </div>
+    <p class="muted small" style="margin:8px 0 0">⟪對數刻度，起點 = 1。|Log scale; start = 1.⟫</p>
+  </div>
+  <div class="grid st-bottom">{perf}{trades}</div>
+  {limits}"""
 
 
 def _years_label(n: int) -> str:
@@ -753,6 +873,11 @@ def render_page(latest: dict, hist: pd.DataFrame, ind: pd.DataFrame, path: Path,
         "__HERO_TOP__": _hero("top", latest, len(shown)),
         "__HERO_BOTTOM__": _hero("bottom", latest, 0),
         "__MIDTERM__": _midterm(latest),
+        "__STRATEGY__": _strategy(latest),
+        "__STRAT_TRADES__": json.dumps({**{k: [t["date"] for t in latest.get("strategy", {}).get("trades", []) if t["action"] == k] for k in ("sell", "buy")},
+                                        # 各起點 1 月 1 日的精確基準（圖表資料一年前為每週一點）
+                                        "base": {y: [float(hist.loc[f"{y}-01-01", "strat_eq"]), float(hist.loc[f"{y}-01-01", "strat_bh"])]
+                                                 for y in ("2014", "2018", "2022")} if "strat_eq" in hist else {}}),
         "__MID_EVENTS__": json.dumps({k: [str(d.date()) for d in _mid_events(hist["mid_" + k + "_signal"] > 0)]
                                       for k in ("dip", "hot")} if "mid_dip_signal" in hist else {"dip": [], "hot": []}),
         "__BIGCATS__": _bigcats([(_cat(k, c["label"]), c["effective_weight"], c["score"], f"#heat/{k}", _band(c["score"]), BAND_TEXT[_band(c["score"])])
@@ -811,6 +936,7 @@ ICONS = {
     "chart": '<path d="M4 19h16"/><path d="M5 15l4-4 3 3 6-7"/>',
     "data": '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M10 10v9"/>',
     "mid": '<path d="M3 12h4l3-7 4 14 3-7h4"/>',
+    "strat": '<path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-4 3 2 5-6"/><circle cx="19" cy="7" r="1.6"/>',
 }
 TABS = [("overview", "⟪總覽|Overview⟫"), ("timing", "⟪時機|Timing⟫"), ("heat", "⟪熱度|Heat⟫"), ("data", "⟪數據|Data⟫")]
 ICONS["cold"] = '<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/><path d="M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5"/>'
@@ -826,8 +952,10 @@ def _tab(k, v):
 
 # 中期狀態不屬於頂部／底部：放在最後、以分隔線隔開，用不編號的獨立按鈕樣式
 TAB_HTML = ("".join(_tab(k, v) for k, v in TABS) + '<span class="tab-sep" aria-hidden="true"></span>'
-            + f'<a class="tab tab-mid" href="#mid" data-tab="mid"><svg viewBox="0 0 24 24" aria-hidden="true">{ICONS["mid"]}</svg>'
-              '<span>⟪中期狀態|Market state⟫</span></a>')
+            + f'<a class="tab tab-mid" href="#mid" data-tab="mid" title="⟪中期狀態|Market state⟫"><svg viewBox="0 0 24 24" aria-hidden="true">{ICONS["mid"]}</svg>'
+              '<span>⟪中期狀態|Market⟫</span></a>'
+            + f'<a class="tab tab-mid tab-strat" href="#strat" data-tab="strat" title="⟪週期策略|Cycle strategy⟫"><svg viewBox="0 0 24 24" aria-hidden="true">{ICONS["strat"]}</svg>'
+              '<span>⟪週期策略|Strategy⟫</span></a>')
 
 TEMPLATE = r"""<!doctype html>
 <html lang="⟪zh-Hant|en⟫">
@@ -1389,8 +1517,8 @@ main.wrap{padding-top:var(--hdr,96px)}
 @media (max-width:899px){.mid-check{grid-template-columns:minmax(0,1fr) auto 16px}.mid-check .t{display:none}}
 
 /* 中期分頁：不屬於頂部或底部，隱藏模式切換、使用中性配色 */
-body.view-mid .sw{visibility:hidden}
-@media (max-width:899px){body.view-mid .sw{display:none}}
+body.view-side .sw{visibility:hidden}
+@media (max-width:899px){body.view-side .sw{display:none}}
 /* 選擇器加重以蓋過深淺色的頂部／底部配色 */
 :root body.view-mid.view-mid{--a1:#7c8cff;--a2:#2aa8ff;--a3:#a48bff}
 :root[data-theme="light"] body.view-mid.view-mid{--a1:#4f5bd5;--a2:#1f8fe0;--a3:#7c5cd6}
@@ -1407,6 +1535,63 @@ body.view-mid .sw{visibility:hidden}
 .tabs-bottom .tab-sep{margin:10px 2px}
 .tabs-bottom .tab.tab-mid{border:1px dashed var(--line2)}
 .tabs-bottom .tab.tab-mid.on{border-color:transparent}
+
+/* 週期策略 */
+:root body.view-strat.view-strat{--a1:#f5b84c;--a2:#ff7a45;--a3:#ffd36e}
+:root[data-theme="light"] body.view-strat.view-strat{--a1:#c98a12;--a2:#e0602a;--a3:#d9a520}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) body.view-strat.view-strat{--a1:#c98a12;--a2:#e0602a;--a3:#d9a520}}
+.topbar .tabs-top .tab.tab-strat:hover{border-color:#f5b84c}
+.topbar .tabs-top .tab.tab-strat.on{background:linear-gradient(135deg,#f5b84c,#ff7a45);box-shadow:0 6px 22px rgba(255,122,69,.35)}
+.tabs-bottom .tab.tab-strat.on{background:linear-gradient(135deg,#f5b84c,#ff7a45);box-shadow:0 6px 20px rgba(255,122,69,.4)}
+.st-top{display:grid;gap:14px}
+@media (min-width:900px){.st-top{grid-template-columns:1.3fr 1fr}}
+.st-top>.card+.card,.st-bottom>.card+.card{margin-top:0}
+.st-card{display:flex;flex-direction:column;gap:10px}
+.st-big{font:900 clamp(44px,5vw,72px)/1 var(--disp);letter-spacing:-.04em;background:linear-gradient(90deg,var(--a1),var(--a2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.st-cash .st-big{background:linear-gradient(90deg,var(--mut),var(--fg));-webkit-background-clip:text;background-clip:text}
+.st-since{margin:0;color:var(--mut);font:500 13px var(--mono)}
+.st-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.st-grid div{padding:12px 10px 10px 0}.st-grid div+div{padding-left:12px;border-left:1px solid var(--line)}
+.st-grid span{display:block;font:600 10.5px var(--mono);letter-spacing:.08em;color:var(--mut);text-transform:uppercase}
+.st-grid b{display:block;font:900 32px/1.1 var(--disp);letter-spacing:-.03em;margin-top:6px}.st-grid b small{font-size:.45em;color:var(--mut)}
+.st-grid b.up{color:var(--s-bot)}.st-grid b.dn{color:var(--s-sig)}
+.st-next{margin:0;font-size:14px;padding:10px 12px;border-left:2px solid var(--a1);background:color-mix(in srgb,var(--a1) 8%,transparent);border-radius:0 10px 10px 0}
+.st-rules ol{margin:10px 0;padding-left:20px}.st-rules li{margin:8px 0;font-size:14px}.st-rules li b{display:inline-block;min-width:5.6em;color:var(--a1)}
+.st-chart{margin-top:14px}
+.st-bottom{margin-top:14px}
+@media (min-width:1200px){.st-bottom{grid-template-columns:1.1fr 1fr}}
+.st-ratio{color:var(--a1)}
+.st-trades .act{font:700 12px var(--mono);padding:3px 8px;border-radius:6px}
+.st-trades .act.sell{color:var(--s-sig);background:color-mix(in srgb,var(--s-sig) 14%,transparent)}
+.st-trades .act.buy{color:var(--s-bot);background:color-mix(in srgb,var(--s-bot) 14%,transparent)}
+.st-trades tr.bad td{background:color-mix(in srgb,var(--s-sig) 8%,transparent)}
+.st-limits{margin-top:14px}.st-limits ul{margin:8px 0 0;padding-left:20px}.st-limits li{font-size:13.5px;margin:6px 0;color:var(--mut)}
+@media (max-width:899px){.st-grid{grid-template-columns:1fr 1fr}.st-grid div:nth-child(3){padding-left:0;border-left:0}.st-grid div:nth-child(n+3){border-top:1px solid var(--line)}}
+.tabs-bottom .tab{min-width:0}.tabs-bottom .tab span{white-space:nowrap}
+
+:root{--strat:#c98a12}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--strat:#f5b84c}}
+:root[data-theme="dark"]{--strat:#f5b84c}
+table.data.fit.st-trades th:first-child,table.data.fit.st-trades td:first-child{width:34%}
+table.data.fit.st-trades td small{font-family:var(--mono)}
+table.data.fit.st-trades th:nth-child(2),table.data.fit.st-trades td:nth-child(2){width:16%}
+table.data.fit.st-trades td:last-child{white-space:normal;overflow:visible;line-height:1.35}
+@media (max-width:899px){table.data .wd{display:none}}
+
+.tabs-top .tab span{white-space:nowrap}
+
+/* 頁首隨寬度逐步縮減，避免右側工具被擠出畫面 */
+@media (min-width:900px) and (max-width:1600px){.brand .sub{display:none}.sw a em{display:none}.appbar-in{gap:14px}
+  .topbar .tabs-top .tab{padding:10px 9px}.topbar .tabs-top .tab.tab-mid{padding:7px 12px}.sw a{padding:8px 13px}}
+@media (min-width:900px) and (max-width:1360px){.tabs-top .tab.tab-mid span{display:none}.topbar .tabs-top .tab.tab-mid{padding:8px 10px}
+  .tabs-top .tab.tab-mid svg{width:17px;height:17px}}
+@media (min-width:900px) and (max-width:1150px){.appbar-in{flex-wrap:wrap;row-gap:6px;padding-top:8px;padding-bottom:8px;height:auto;min-height:66px}
+  .tabs-top{margin-left:auto}.sw{order:3;flex:1 1 100%;max-width:560px;margin:0 auto 4px}.tools{padding-left:8px}}
+
+/* 全寬：內容隨螢幕撐滿（左右留約 3% 邊距），文字段落維持可讀寬度 */
+@media (min-width:900px){.wrap{max-width:none;padding-left:max(28px,3vw);padding-right:max(28px,3vw)}
+  .mode-bar{margin-left:calc(-1 * max(28px,3vw));margin-right:calc(-1 * max(28px,3vw))}}
+@media (min-width:1200px){.ind-grid{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}.cold-groups .ind-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1509,6 +1694,10 @@ __TICKER__
 <section class="view" data-view="mid" aria-label="⟪中期狀態|Market state⟫">
 __MIDTERM__
 </section>
+
+<section class="view" data-view="strat" aria-label="⟪週期策略|Cycle strategy⟫">
+__STRATEGY__
+</section>
 </main>
 
 <nav class="tabs tabs-bottom" aria-label="⟪分頁|Tabs⟫">__TABS__</nav>
@@ -1537,6 +1726,8 @@ __MIDTERM__
   <p>⟪<b>趨勢環境</b>：價格相對 200 日均線、20 週均線（牛市支撐帶）、50 日均線，以及週線 Supertrend（ATR 10 × 3）的方向與支撐／壓力位。|<b>Trend</b>: price versus the 200-day MA, the 20-week MA (bull-market support band) and the 50-day MA, plus the weekly Supertrend (ATR 10 × 3) direction and its support/resistance level.⟫</p>
   <p>⟪<b>牛市回調觀察</b>：價格在 200 日均線之上時，日 RSI&lt;35、低於 50 日均線 10%、30 日跌逾 15%、恐懼貪婪&lt;25、資金費率 ≤0，五項符合三項即觸發。<b>短線過熱</b>為對應的五個相反條件。|<b>Dip watch</b>: with price above the 200-day MA, it triggers when 3 of 5 hold — daily RSI&lt;35, 10% below the 50-day MA, down 15%+ in 30 days, Fear &amp; Greed&lt;25, funding ≤0. <b>Overheating</b> uses the five opposite conditions.⟫</p>
   <p>⟪研究結果：過熱不是可靠的賣訊號（單一指標過熱之後平均仍續漲，組合過熱之後好壞參半）；牛市回調有小幅優勢但次數少；Supertrend 屬確認型。這一區只幫助看清目前狀態，證據比頂部／底部訊號弱。|Findings: overheating is not a reliable sell signal (single overheated indicators were on average followed by further gains; combined overheating had mixed outcomes); bull-market dips showed a small edge with few occurrences; the Supertrend confirms rather than predicts. This section helps read the current state; its evidence is weaker than the top/bottom signals.⟫</p>
+  <h3>⟪週期策略（「週期策略」頁）|Cycle strategy (“Strategy” tab)⟫</h3>
+  <p>⟪持有中，頂部訊號或頂部時機 ≥ 50 進入警戒，警戒中週線 Supertrend 轉空就賣出；空手時，底部訊號 ≥ 50 或 Supertrend 轉多就買回。頁面顯示目前狀態、逐輪回測（不偷看未來）的模擬資金曲線與歷史交易。|While holding, top signal or top timing ≥ 50 puts it on alert, and a weekly Supertrend down-turn on alert sells; in cash, bottom signal ≥ 50 or a Supertrend up-turn buys back. The tab shows the current state, a walk-forward (no look-ahead) simulated equity curve and past trades.⟫</p>
   <h3>⟪限制|Limitations⟫</h3><ul>
     <li>⟪時機假設約四年的週期會延續；週期若變長或變短，訊號可能提早、延後甚至整輪不亮，請同時看熱度與時機。|Timing assumes the ~4-year cycle continues. If cycles stretch or shrink, signals may come early, late, or not at all — watch heat and timing separately too.⟫</li>
     <li>⟪訊號是「幾個月的窗口」，不是精確的頂部日期。|Signals mark a window of months, not an exact top date.⟫</li>
@@ -1546,12 +1737,12 @@ __MIDTERM__
 
 <script>
 document.documentElement.classList.add('js');
-const MID=__MID_EVENTS__;
+const MID=__MID_EVENTS__,STR=__STRAT_TRADES__;
 const D=__DATA__,IND=__IND__,TOPS=__TOPS__,BOTTOMS=__BOTTOMS__,CUR_LOW=__CUR_LOW__,WIN=__WIN__,ALERT=__ALERT__;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const TS=D.d.map(d=>Date.parse(d));  /* 橫軸依實際日期（資料一年前每週一點、最近一年每日一點） */
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const st={mid:{years:2,hover:null},main:{years:0,hover:null,hide:new Set(),p:0},ind:{years:0,hover:null,k:null},mode:'top',modeApplied:null};
+const st={strat:{years:2014,hover:null},mid:{years:2,hover:null},main:{years:0,hover:null,hide:new Set(),p:0},ind:{years:0,hover:null,k:null},mode:'top',modeApplied:null};
 function i0of(y){if(!y)return 0;const c=new Date(D.d[D.d.length-1]);c.setFullYear(c.getFullYear()-y);const s=c.toISOString().slice(0,10);return Math.max(0,D.d.findIndex(x=>x>=s));}
 function niceTicks(lo,hi){const span=hi-lo,step=10**Math.floor(Math.log10(span/3)),m=[1,2,5,10].find(k=>span/(k*step)<=5)*step,out=[];for(let v=Math.ceil(lo/m)*m;v<=hi;v+=m)out.push(+v.toFixed(10));return out;}
 function short(v){const a=Math.abs(v);return a>=1e6?(v/1e6)+'M':a>=1e3?(v/1e3)+'k':+v.toFixed(3)+'';}
@@ -1599,16 +1790,25 @@ function bind(els,g,i0fn,draw){const mv=ev=>{const el=ev.currentTarget,L=+(el.da
   els.forEach(e=>{if(!e)return;e.onmousemove=mv;e.ontouchmove=mv;e.ontouchstart=mv;e.onmouseleave=()=>{st[g].hover=null;draw();};});}
 const f0=v=>v==null?'—':Math.round(v);
 function mainMarks(){return st.mode==='bottom'?[{d:BOTTOMS,c:'--botline',dash:'3 3',op:.75},{d:[CUR_LOW],c:'--botline',dash:'1 4',op:.55}]:[{d:TOPS,c:'--topline',dash:'3 3',op:.6}];}
-function drawMain(){const s=st.main,i0=i0of(s.years),mk=mainMarks();$('#c-main').setAttribute('height',innerWidth>=900?Math.round(Math.max(360,Math.min(620,innerHeight*.6))):320);
+function drawMain(){const s=st.main,i0=i0of(s.years),mk=mainMarks();$('#c-main').setAttribute('height',chartH(320,.6));
   chart($('#c-main'),i0,[{a:D.tim,c:'--s-tim',w:1.6,dash:'5 4',hide:s.hide.has('tim')},{a:D.heat,c:'--s-heat',w:1.7,hide:s.hide.has('heat')},{a:D.cold,c:'--s-cold',w:1.6,hide:s.hide.has('cold')},{a:D.bsig,c:'--s-bot',w:2.4,fill:true,glow:true,hide:s.hide.has('bsig')},{a:D.sig,c:'--s-sig',w:2.6,fill:true,glow:true,hide:s.hide.has('sig')}],{min:0,max:100,ticks:[0,25,50,75,100],thresholds:[WIN,ALERT],axis:true,hover:s.hover,marks:mk,bg:{a:D.p},reveal:s.p});
   const j=i0+(s.hover==null?D.d.length-1-i0:s.hover);
   $('#tip-main').innerHTML=`<b>${D.d[j]}</b><span>${D.p[j]==null?'—':'$'+Math.round(D.p[j]).toLocaleString()}</span><span>⟪訊號|Top⟫ <b>${f0(D.sig[j])}</b></span><span>⟪熱度|Heat⟫ <b>${f0(D.heat[j])}</b></span><span>⟪時機|Timing⟫ <b>${f0(D.tim[j])}</b></span><span>⟪底部|Bottom⟫ <b>${f0(D.bsig[j])}</b></span><span>⟪冷度|Cold⟫ <b>${f0(D.cold[j])}</b></span>`;}
-function drawMid(){const el=$('#c-mid');if(!el||!D.ma200)return;const s=st.mid,i0=i0of(s.years);el.setAttribute('height',innerWidth>=900?380:280);
+/* 圖表高度：桌機依視窗高度（360–820px），寬螢幕下不會顯得扁 */
+function chartH(mobile,k){return innerWidth>=900?Math.round(Math.max(360,Math.min(820,innerHeight*k,innerWidth*.42))):mobile;}
+function drawMid(){const el=$('#c-mid');if(!el||!D.ma200)return;const s=st.mid,i0=i0of(s.years);el.setAttribute('height',chartH(280,.5));
   const up=D.stl.map((v,i)=>D.std[i]>0?v:null),dn=D.stl.map((v,i)=>D.std[i]<0?v:null),since=D.d[i0];
   chart(el,i0,[{a:D.ma50,c:'--s-tim',w:1.2},{a:D.ma20w,c:'--s-cold',w:1.5,dash:'5 4'},{a:D.ma200,c:'--s-heat',w:1.6},{a:up,c:'--s-bot',w:2.4,glow:true},{a:dn,c:'--s-sig',w:2.4,glow:true},{a:D.p,c:'--fg',w:1.6}],
     {log:true,axis:true,hover:s.hover,marks:[{d:MID.dip.filter(x=>x>=since),c:'--s-bot',dash:'2 4',op:.8},{d:MID.hot.filter(x=>x>=since),c:'--a3',dash:'2 4',op:.8}]});
   const j=i0+(s.hover==null?D.d.length-1-i0:s.hover),m=v=>v==null?'—':'$'+Math.round(v).toLocaleString();
   $('#tip-mid').innerHTML=`<b>${D.d[j]}</b><span>${m(D.p[j])}</span><span>Supertrend <b>${D.std[j]==null?'—':(D.std[j]>0?'⟪多|Up⟫ ':'⟪空|Down⟫ ')+m(D.stl[j])}</b></span><span>⟪200 日|200D⟫ <b>${m(D.ma200[j])}</b></span><span>⟪20 週|20W⟫ <b>${m(D.ma20w[j])}</b></span><span>⟪50 日|50D⟫ <b>${m(D.ma50[j])}</b></span>`;}
+function drawStrat(){const el=$('#c-strat');if(!el||!D.seq)return;const s=st.strat;el.setAttribute('height',chartH(300,.55));
+  const i0=Math.max(0,D.d.findIndex(x=>x>=s.years+'-01-01')),bs=(STR.base||{})[s.years]||[D.seq[i0],D.sbh[i0]],b1=bs[0],b2=bs[1],since=D.d[i0];
+  const a=D.seq.map((v,i)=>i<i0||v==null?null:v/b1),b=D.sbh.map((v,i)=>i<i0||v==null?null:v/b2);
+  chart(el,i0,[{a:b,c:'--price',w:1.6},{a:a,c:'--strat',w:2.6,glow:true}],{log:true,axis:true,hover:s.hover,
+    marks:[{d:STR.sell.filter(x=>x>=since),c:'--s-sig',dash:'2 4',op:.85},{d:STR.buy.filter(x=>x>=since),c:'--s-bot',dash:'2 4',op:.85}]});
+  const j=i0+(s.hover==null?D.d.length-1-i0:s.hover),f=v=>v==null?'—':(v>=100?Math.round(v).toLocaleString():v.toFixed(2))+'×';
+  $('#tip-strat').innerHTML=`<b>${D.d[j]}</b><span>⟪策略|Strategy⟫ <b>${f(a[j])}</b></span><span>⟪持有|Hold⟫ <b>${f(b[j])}</b></span><span>${D.p[j]==null?'':'$'+Math.round(D.p[j]).toLocaleString()}</span>`;}
 function drawInd(){const s=st.ind,k=s.k;if(!k)return;const i0=i0of(s.years),v=D['v_'+k],sc=D['s_'+k],m=IND[k];
   chart($('#c-val'),i0,[{a:v,c:'--s-heat',w:1.8}],{hover:s.hover});
   if(sc)chart($('#c-sc'),i0,[{a:sc,c:k.startsWith('cold_')?'--s-cold':'--s-sig',w:1.8,fill:true}],{min:0,max:120,ticks:[0,40,80,120],axis:true,hover:s.hover});
@@ -1643,7 +1843,7 @@ function openInd(k){const m=IND[k];st.ind={years:0,hover:null,k};
   <div class="tip" id="tip-ind"></div><svg class="chart" id="c-val" height="160" role="img" aria-label="⟪指標數值歷史|Indicator value history⟫"></svg>
   ${D['s_'+k]?'<svg class="chart" id="c-sc" height="120" role="img" aria-label="⟪指標分數歷史|Indicator score history⟫"></svg>':''}`,()=>{bindSeg();bind([$('#c-val'),$('#c-sc')],'ind',()=>i0of(st.ind.years),drawInd);drawInd();});}
 $$('.ind').forEach(b=>b.onclick=()=>openInd(b.dataset.k));
-function bindSeg(){$$('.seg').forEach(box=>box.querySelectorAll('button').forEach(b=>b.onclick=()=>{box.querySelectorAll('button').forEach(o=>o.classList.remove('on'));b.classList.add('on');const g=box.dataset.g;st[g].years=+b.dataset.y;st[g].hover=null;g==='main'?animMain():g==='mid'?drawMid():drawInd();}));}
+function bindSeg(){$$('.seg').forEach(box=>box.querySelectorAll('button').forEach(b=>b.onclick=()=>{box.querySelectorAll('button').forEach(o=>o.classList.remove('on'));b.classList.add('on');const g=box.dataset.g;st[g].years=+b.dataset.y;st[g].hover=null;g==='main'?animMain():g==='mid'?drawMid():g==='strat'?drawStrat():drawInd();}));}
 $$('#legend-main button').forEach(b=>b.onclick=()=>{const k=b.dataset.s,h=st.main.hide;h.has(k)?h.delete(k):h.add(k);b.classList.toggle('off');drawMain();});
 /* ===== 極光潮汐動效：星空、液態大數字、首屏波浪（只動畫可見的首屏） ===== */
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1706,7 +1906,7 @@ function animMain(){cancelAnimationFrame(animMain.id);if(RM){st.main.p=1;drawMai
     const L=+el.dataset.l,R=+el.dataset.r,cw=L+(el.clientWidth-L-R)*e;r.setAttribute('width',cw);if(sc){sc.setAttribute('x1',cw);sc.setAttribute('x2',cw);}
     animMain.id=requestAnimationFrame(f);});}
 /* 路由 */
-const VIEWS=['overview','timing','heat','data','mid'];
+const VIEWS=['overview','timing','heat','data','mid','strat'];
 const MODE_HIDE={top:['bsig','cold'],bottom:['sig','heat','tim']};
 function applyMode(m){if(st.modeApplied===m)return;st.modeApplied=m;st.main.hide=new Set(MODE_HIDE[m]);$$('#legend-main button').forEach(b=>b.classList.toggle('off',st.main.hide.has(b.dataset.s)));}
 function parseHash(){let p=(location.hash.slice(1)||'overview').split('/'),mode='top';
@@ -1714,7 +1914,7 @@ function parseHash(){let p=(location.hash.slice(1)||'overview').split('/'),mode=
   if(p[0]==='overview'&&p[1]==='bottom'){mode='bottom';p=['overview'];}   /* 相容舊網址 */
   let v=p[0]||'overview';if(!VIEWS.includes(v))v='overview';return {mode,v,sub:p[1]};}
 function route(){const {mode,v,sub}=parseHash();st.mode=mode;
-  document.body.classList.toggle('mode-bottom',mode==='bottom');document.body.classList.toggle('view-mid',v==='mid');
+  document.body.classList.toggle('mode-bottom',mode==='bottom');document.body.classList.toggle('view-mid',v==='mid');document.body.classList.toggle('view-strat',v==='strat');document.body.classList.toggle('view-side',v==='mid'||v==='strat');
   $$('.view').forEach(e=>e.classList.toggle('on',e.dataset.view===v));
   $$('.tab').forEach(e=>{e.classList.toggle('on',e.dataset.tab===v);e.setAttribute('href','#'+(mode==='bottom'?'b/':'')+e.dataset.tab);});
   $('#mode-top').setAttribute('href','#'+v);$('#mode-bottom').setAttribute('href','#b/'+v);
@@ -1725,8 +1925,8 @@ function route(){const {mode,v,sub}=parseHash();st.mode=mode;
     requestAnimationFrame(()=>{const c=$('#sec-history'),r=c.getBoundingClientRect();if(r.top<innerHeight*.85&&r.bottom>0){st.main.played=true;animMain();}});}
   if(sub){const el=document.getElementById((mode==='bottom'?'grp-':'cat-')+sub);if(el){el.open=true;setTimeout(()=>{const y=el.getBoundingClientRect().top+scrollY-hdr()-16;scrollTo({top:y,behavior:'smooth'});},30);}}else scrollTo(0,0);
   redraw();}
-function redraw(){const {v}=parseHash();if(v==='overview')drawMain();if(v==='mid')drawMid();if(st.ind.k)drawInd();}
-bind([$('#c-main')],'main',()=>i0of(st.main.years),drawMain);bind([$('#c-mid')],'mid',()=>i0of(st.mid.years),drawMid);bindSeg();
+function redraw(){const {v}=parseHash();if(v==='overview')drawMain();if(v==='mid')drawMid();if(v==='strat')drawStrat();if(st.ind.k)drawInd();}
+bind([$('#c-main')],'main',()=>i0of(st.main.years),drawMain);bind([$('#c-mid')],'mid',()=>i0of(st.mid.years),drawMid);bind([$('#c-strat')],'strat',()=>Math.max(0,D.d.findIndex(x=>x>=st.strat.years+'-01-01')),drawStrat);bindSeg();
 addEventListener('hashchange',route);addEventListener('resize',redraw);matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redraw);
 initStars();route();if(!RM)requestAnimationFrame(frame);
 </script>

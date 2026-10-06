@@ -16,6 +16,7 @@ import pandas as pd
 
 from btc_top import sources
 from btc_top.midterm import compute_midterm
+from btc_top.strategy import compute_strategy, projected_arm
 from btc_top.page import render_page
 from btc_top.scoring import (BOTTOM_STRONG, BOTTOM_WINDOW, CATEGORIES, COLD_GROUP_LABEL, COLD_INDICATORS,
                              COLD_WEIGHTS, HALVINGS, SIGNAL_ALERT, SIGNAL_WINDOW, TIMING_FLAT, TIMING_RAMP,
@@ -74,7 +75,7 @@ def fetch_all(today: pd.Timestamp):
         "stablecoins": [sources.stablecoins],
         "fear_greed": [sources.fear_greed],
         "funding": [lambda: sources.funding_binance(since("funding")), sources.funding_okx],
-        "open_interest": [sources.open_interest_okx, sources.open_interest_binance],
+        "open_interest": [sources.open_interest_okx_swaps, sources.open_interest_okx, sources.open_interest_binance],
         "basis": [lambda: sources.basis_binance(since("basis")), sources.basis_okx],
         "coinbase_premium": [lambda: sources.coinbase_premium(30 if len(cb_old) else 1500)],
         "etf": [sources.etf_tftc, sources.etf_farside],
@@ -204,6 +205,8 @@ def main():
     btim, binfo = compute_bottom_timing(ind.index, ind["price"], tops, bottoms)
     bsig = bottom_signal(cold, btim["timing"])
     mid, mid_info = compute_midterm(ind, raw.get("ohlc", pd.DataFrame()), today)
+    live = pd.DataFrame({"sig": signal, "tim": tim["timing"], "bsig": bsig})
+    strat, strat_info = compute_strategy(ind, live, mid["st_dir"] if "st_dir" in mid else pd.Series(dtype=float), today)
 
     # ---- 歷史時間序列 ----
     ind.to_csv(DATA / "indicators.csv", index_label="date", float_format="%.6g")
@@ -218,6 +221,7 @@ def main():
     hist["hash_ribbon_min90"] = ribbon_min90
     hist = hist.join(cat_scores.add_prefix("cat_")).join(scores.add_prefix("score_"))
     hist = hist.join(mid.drop(columns=["dip_hits", "hot_hits"]).astype(float).add_prefix("mid_"))
+    hist = hist.join(strat)
     hist = hist.dropna(subset=["heat"]).loc["2011-01-01":]
     hist.to_csv(DATA / "scores.csv", index_label="date", float_format="%.4g")
 
@@ -306,6 +310,7 @@ def main():
         "bottom_timing_score": bottom["timing"]["score"],
         "bottom": bottom,
         "midterm": mid_info,
+        "strategy": strat_info,
         "categories": categories,
         "cycle_tops": [str(x.date()) for x in tops],
         "cycle_bottoms": [str(b.date()) for b in bottoms],
@@ -321,6 +326,7 @@ def main():
         },
         "disclaimer": "僅供參考，不構成投資建議。",
     }
+    strat_info["projected_arm"] = projected_arm(timing, today) if strat_info["state"] == "holding" and not strat_info["armed"] else None
     DOCS.mkdir(parents=True, exist_ok=True)
     (DOCS / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2))
     render_page(latest, hist, ind, DOCS / "index.html", defs, lang="zh")
