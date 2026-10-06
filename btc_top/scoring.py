@@ -139,6 +139,8 @@ def build_indicators(raw: dict[str, pd.DataFrame]) -> pd.DataFrame:
     growth = pd.Series(10 ** (5.84 * np.log10(age) - 17.01), index=idx)
     gm200 = np.exp(np.log(cm["PriceUSD"]).rolling(200, min_periods=200).mean())
     ind["ahr999"] = (cm["PriceUSD"] / gm200) * (cm["PriceUSD"] / growth)
+    # 底部用：Power Law = 價格 ÷ 冪律趨勢價（log 價格對 log 天數的直線；每天只用當天以前的資料擬合，無前視）
+    ind["powerlaw"] = powerlaw_ratio(cm["PriceUSD"])
 
     # 二、持有者行為：公開版無免費可用資料（交易所流量實測方向失效，已移除）；私人版見下方 BGeometrics
 
@@ -181,6 +183,23 @@ def build_indicators(raw: dict[str, pd.DataFrame]) -> pd.DataFrame:
         if k not in ind:
             ind[k] = np.nan
     return ind
+
+
+def powerlaw_ratio(price: pd.Series, min_days: int = 730) -> pd.Series:
+    """價格 ÷ 冪律趨勢價。趨勢線 log10(價格) = a + b·log10(距創世區塊天數)，以擴展視窗逐日擬合（只用當天以前的資料）；
+    前 min_days 天資料太少不計算。"""
+    p = price.where(price > 0)
+    x = pd.Series(np.log10((p.index - pd.Timestamp("2009-01-03")).days.astype(float)), index=p.index)
+    y = np.log10(p)
+    ok = y.notna()
+    xs, ys = x.where(ok, 0.0), y.fillna(0.0)
+    n, sx, sy = ok.cumsum(), xs.cumsum(), ys.cumsum()
+    sxx, sxy = (xs * xs).cumsum(), (xs * ys).cumsum()
+    b = (n * sxy - sx * sy) / (n * sxx - sx * sx)
+    a = (sy - b * sx) / n
+    r = 10 ** (y - (a + b * x))
+    first = p.first_valid_index()
+    return r.where(p.index >= first + pd.Timedelta(days=min_days)) if first is not None else r
 
 
 def _fit(xs, ys, x_target):
@@ -366,12 +385,17 @@ COLD_INDICATORS = {
                     "算力 30 日均跌破 60 日均代表礦工關機投降，常出現在底部前後；但減半後與政策事件也會發生，僅作輔助。"),
     "cold_ahr999": ("price", "AHR999", "ahr999", "",
                     "價格相對 200 日幾何平均與長期指數成長曲線的位置。過去三次底部為 0.23、0.27、0.26；慣用 1.2 為定投線（中性）。"),
+    "cold_powerlaw": ("price", "Power Law（價格 ÷ 冪律趨勢價）", "powerlaw", "x",
+                      "比特幣長期價格沿冪律曲線成長（對數價格與對數天數近似直線）；趨勢線每天只用當天以前的資料擬合。"
+                      "1.0 倍＝趨勢價（中性）；過去三次底部為 0.24、0.48、0.36 倍。與 AHR999 高度相關，同組平均、不重複計分。"
+                      "只用於底部：頂部倍數逐輪快速下降（8.5→6.6→2.3→1.1），且 2021-04、2024-03 中段高點不低於真頂部。"),
 }
 COLD_GROUP_LABEL = {"valuation": "估值", "miners": "礦工", "price": "價格結構"}
 # 中性點固定的指標（其頂部讀數遞減過快，外推的預期頂部會低於預期底部，中點因此失去意義）：
-# Puell 定義為「礦工收入 ÷ 一年均值」，1.0 即中性；AHR999 慣用 1.2 為定投線。
+# Puell 定義為「礦工收入 ÷ 一年均值」，1.0 即中性；AHR999 慣用 1.2 為定投線；Power Law 以趨勢價（1.0 倍）為中性。
+# Power Law 已測試（2026-10）：三次底部訊號 73/95/83 → 74/93/84，四次假底部仍為 0、熊市外 ≥50 天數仍為 0，因此加入價格結構組。
 # Pi Cycle（111 日均 ÷ 350 日均×2）已測試：加入頂部訊號後 2021 頂部下降、窗外假訊號上升，未採用。
-COLD_NEUTRAL_FIXED = {"cold_puell": 1.0, "cold_ahr999": 1.2}
+COLD_NEUTRAL_FIXED = {"cold_puell": 1.0, "cold_ahr999": 1.2, "cold_powerlaw": 1.0}
 
 
 def compute_cold(ind: pd.DataFrame, tops, bottoms):

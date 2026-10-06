@@ -3,6 +3,8 @@ name: daily-update
 on:
   schedule:
     - cron: "15 0 * * *"  # 每天 UTC 00:15（每日報告 00:40 之前）
+    - cron: "30 0 * * *"  # 備援：GitHub 偶爾漏跑或延遲排程；今天已更新就略過
+    - cron: "15 3 * * *"  # 備援
   workflow_dispatch:
 
 permissions:
@@ -18,18 +20,33 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 30
+
+      - name: 檢查今天是否已更新（只有備援排程會略過）
+        id: chk
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" != "15 0 * * *" ] \
+             && git log -30 --format=%s | grep -qx "data: daily update $(date -u +%Y-%m-%d)"; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "今天已更新，備援排程略過"
+          fi
 
       - uses: actions/setup-python@v5
+        if: steps.chk.outputs.skip != 'true'
         with:
           python-version: "3.11"
           cache: pip
 
       - run: pip install -r requirements.txt
+        if: steps.chk.outputs.skip != 'true'
 
       - name: 抓取數據並計算分數
+        if: steps.chk.outputs.skip != 'true'
         run: python run.py
 
       - name: Commit 更新
+        if: steps.chk.outputs.skip != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

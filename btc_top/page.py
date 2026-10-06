@@ -60,6 +60,7 @@ IND_EN = {
     "cold_puell": ("Puell Multiple", "Miner revenue vs its one-year average. Past bottoms: 0.31, 0.39, 0.48. Structurally lower miner revenue after the 2024 halving may make this read colder."),
     "cold_ribbon": ("Hash Ribbons (deepest in 90d)", "Hashrate 30d avg falling below 60d avg means miners are capitulating — common around bottoms, but also after halvings and policy shocks, so it is only supporting evidence."),
     "cold_ahr999": ("AHR999", "Price relative to its 200-day geometric mean and a long-term exponential growth curve. Past bottoms: 0.23, 0.27, 0.26; 1.2 is the customary DCA line (neutral)."),
+    "cold_powerlaw": ("Power Law (price ÷ power-law trend)", "Bitcoin's long-run price has grown along a power law (log price vs. log days is close to a straight line); the trend line is fitted each day using only data up to that day. 1.0x = trend price (neutral); past bottoms: 0.24x, 0.48x, 0.36x. Highly correlated with AHR999, so the two are averaged within one group rather than double-counted. Used for bottoms only: top multiples fall fast each cycle (8.5→6.6→2.3→1.1), and the 2021-04 and 2024-03 mid-cycle highs were as high as the real tops."),
 }
 CAT_EN = {"onchain_valuation": "On-chain valuation", "holder_behavior": "Holder behavior", "capital_flows": "Capital flows",
           "leverage": "Leverage & derivatives", "sentiment_cycle": "Sentiment"}
@@ -281,7 +282,7 @@ STATUS_TEXT = {"testing": "⟪驗證中|Testing⟫", "supported": "⟪支持：�
 TICKER_CODE = {"mvrv_z": "MVRV-Z", "nupl": "NUPL", "puell": "PUELL", "rp_multiple": "MVRV", "etf_flow_30d": "ETF 30D",
                "etf_flow_momentum": "ETF MOM", "stable_growth_90d": "STABLE 90D", "coinbase_premium_7d": "CB PREMIUM",
                "funding_7d_ann": "FUNDING", "oi_to_mcap": "OI/MCAP", "basis_ann": "BASIS", "fear_greed_7d": "F&amp;G",
-               "lth_sopr_7d": "LTH-SOPR", "cdd_30d": "CDD", "lth_mvrv": "LTH-MVRV", "cold_ribbon": "HASH RIBBON", "cold_ahr999": "AHR999"}
+               "lth_sopr_7d": "LTH-SOPR", "cdd_30d": "CDD", "lth_mvrv": "LTH-MVRV", "cold_ribbon": "HASH RIBBON", "cold_ahr999": "AHR999", "cold_powerlaw": "POWER LAW"}
 
 
 def _tick_val(v, unit):
@@ -1348,7 +1349,7 @@ __TICKER__
   <h3>⟪為什麼要乘上時機？|Why multiply by timing?⟫</h3><p>⟪只看熱度時，2021-04、2024-03 這些中段高點的熱度其實比真正的週期頂部（2021-11、2025-10）還高。最終頂部的特徵是時間點很規律：最近三次都在減半後 525–546 天、低點後約 1,060 天。加入時機後，最近三輪的最終頂部都成為該輪訊號最高的時候。|On heat alone, mid-cycle highs such as 2021-04 and 2024-03 ran hotter than the real cycle tops (2021-11, 2025-10). What final tops share is timing: the last three came 525–546 days after the halving and about 1,060 days after the low. With timing included, each of the last three final tops is its cycle's highest signal.⟫</p>
   <h3>⟪底部訊號（切換到「底部訊號」模式）|Bottom signal (switch to “Bottom signal” mode)⟫</h3>
   <div class="callout">⟪底部訊號 = 冷度（7 日均）× 底部時機 ÷ 100<br>≥ __BWIN__ 底部區　·　≥ 70 強烈底部|Bottom signal = coldness (7d avg) × bottom timing ÷ 100<br>≥ __BWIN__ bottom zone　·　≥ 70 strong bottom⟫</div>
-  <p>⟪<b>冷度</b>：估值（MVRV、NUPL）50%、礦工（Puell、Hash Ribbons）30%、價格結構（AHR999）20%。100 代表達到本輪推估的底部水準。|<b>Coldness</b>: valuation (MVRV, NUPL) 50%, miners (Puell, Hash Ribbons) 30%, price structure (AHR999) 20%. 100 means this cycle's projected bottom level.⟫</p>
+  <p>⟪<b>冷度</b>：估值（MVRV、NUPL）50%、礦工（Puell、Hash Ribbons）30%、價格結構（AHR999、Power Law）20%。100 代表達到本輪推估的底部水準。|<b>Coldness</b>: valuation (MVRV, NUPL) 50%, miners (Puell, Hash Ribbons) 30%, price structure (AHR999, Power Law) 20%. 100 means this cycle's projected bottom level.⟫</p>
   <p>⟪<b>底部時機</b>：距上次頂部天數（過去底部平均約 379 天）與距上次減半天數（約 859 天）。|<b>Bottom timing</b>: days since the last top (past bottoms averaged ~379) and days since the last halving (~859).⟫</p>
   <p>⟪參數只依 2015、2018、2022 三次底部與中段假底部決定，本輪（2026）是樣本外檢驗；「週期結構驗證」會追蹤本輪低點是否就是週期底部。切換模式後，時機、熱度（冷度）、數據各頁都會換成對應內容。|Parameters were set only from the 2015, 2018 and 2022 bottoms and mid-cycle false bottoms, so this cycle (2026) is an out-of-sample test. The “cycle structure test” tracks whether this cycle's low is the bottom. Switching modes swaps the Timing, Heat/Cold and Data tabs to match.⟫</p>
   <h3>⟪限制|Limitations⟫</h3><ul>

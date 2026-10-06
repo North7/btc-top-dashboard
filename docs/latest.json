@@ -1,8 +1,8 @@
 {
-  "date": "2026-10-05",
-  "generated_at": "2026-10-05T05:35:00Z",
-  "price_usd": 86520.8,
-  "price_date": "2026-10-04",
+  "date": "2026-10-06",
+  "generated_at": "2026-10-06T00:39:27Z",
+  "price_usd": 85834.53,
+  "price_date": "2026-10-05",
   "top_signal": 0.0,
   "signal_level": "none",
   "heat_score": 40.4,
@@ -10,13 +10,13 @@
   "timing_score": 0.0,
   "hot_categories": 0,
   "zone": "warm",
-  "stale": false,
+  "stale": true,
   "timing": {
     "score": 0.0,
     "score_halving": 0.0,
     "score_low": 0.0,
-    "days_since_halving": 898,
-    "days_since_low": 97,
+    "days_since_halving": 899,
+    "days_since_low": 98,
     "last_halving": "2024-04-20",
     "next_halving": "2028-04-15",
     "next_halving_estimated": true,
@@ -54,14 +54,14 @@
       "2025-10-06": 1062
     }
   },
-  "bottom_signal": 20.4,
+  "bottom_signal": 21.6,
   "bottom_level": "none",
-  "cold_score": 19.8,
+  "cold_score": 21.4,
   "bottom_timing_score": 100.0,
   "bottom": {
-    "signal": 20.4,
+    "signal": 21.6,
     "level": "none",
-    "cold_score": 19.8,
+    "cold_score": 21.4,
     "groups": {
       "估值": {
         "score": 0.0,
@@ -72,7 +72,7 @@
         "weight": 0.3
       },
       "價格結構": {
-        "score": 66.6,
+        "score": 75.1,
         "weight": 0.2
       }
     },
@@ -120,8 +120,8 @@
         "expected_bottom": 0.5939,
         "neutral": 1.0,
         "past_bottoms": {
-          "2015-01-14": 0.3123250950141824,
-          "2018-12-15": 0.3893759732132719,
+          "2015-01-14": 0.3123250950141825,
+          "2018-12-15": 0.38937597321327183,
           "2022-11-09": 0.4786260405008019
         }
       },
@@ -140,8 +140,8 @@
         "group": "價格結構",
         "unit": "",
         "description": "價格相對 200 日幾何平均與長期指數成長曲線的位置。過去三次底部為 0.23、0.27、0.26；慣用 1.2 為定投線（中性）。",
-        "value": 0.591,
-        "score": 66.6,
+        "value": 0.5806,
+        "score": 67.8,
         "method": "cycle_bottom",
         "expected_bottom": 0.286,
         "neutral": 1.2,
@@ -150,14 +150,30 @@
           "2018-12-15": 0.27212766338182914,
           "2022-11-09": 0.25710334600285967
         }
+      },
+      "cold_powerlaw": {
+        "label": "Power Law（價格 ÷ 冪律趨勢價）",
+        "group": "價格結構",
+        "unit": "x",
+        "description": "比特幣長期價格沿冪律曲線成長（對數價格與對數天數近似直線）；趨勢線每天只用當天以前的資料擬合。1.0 倍＝趨勢價（中性）；過去三次底部為 0.24、0.48、0.36 倍。與 AHR999 高度相關，同組平均、不重複計分。只用於底部：頂部倍數逐輪快速下降（8.5→6.6→2.3→1.1），且 2021-04、2024-03 中段高點不低於真頂部。",
+        "value": 0.6028,
+        "score": 82.4,
+        "method": "cycle_bottom",
+        "expected_bottom": 0.5181,
+        "neutral": 1.0,
+        "past_bottoms": {
+          "2015-01-14": 0.24087807889641602,
+          "2018-12-15": 0.48243284320091806,
+          "2022-11-09": 0.35963496697829206
+        }
       }
     },
     "timing": {
       "score": 100.0,
       "score_top": 100.0,
       "score_halving": 100.0,
-      "days_since_top": 364,
-      "days_since_halving": 898,
+      "days_since_top": 365,
+      "days_since_halving": 899,
       "last_top": "2025-10-06",
       "last_halving": "2024-04-20",
       "window_by_top": {
@@ -200,9 +216,9 @@
         "drawdown_pct": -53.1,
         "mvrv": 1.103,
         "nupl": 0.093,
-        "bottom_signal_max_cycle": 57.3,
+        "bottom_signal_max_cycle": 58.7,
         "bottom_signal_max_date": "2026-07-02",
-        "days_bottom_zone": 19
+        "days_bottom_zone": 28
       },
       "past_bottoms": [
         {
@@ -212,8 +228,8 @@
           "drawdown_pct": -84.5,
           "mvrv": 0.564,
           "nupl": -0.774,
-          "bottom_signal_max_cycle": 72.7,
-          "days_bottom_zone": 57
+          "bottom_signal_max_cycle": 73.5,
+          "days_bottom_zone": 71
         },
         {
           "date": "2018-12-15",
@@ -222,7 +238,7 @@
           "drawdown_pct": -83.8,
           "mvrv": 0.69,
           "nupl": -0.448,
-          "bottom_signal_max_cycle": 94.6,
+          "bottom_signal_max_cycle": 92.6,
           "days_bottom_zone": 129
         },
         {
@@ -232,8 +248,8 @@
           "drawdown_pct": -76.7,
           "mvrv": 0.754,
           "nupl": -0.326,
-          "bottom_signal_max_cycle": 83.2,
-          "days_bottom_zone": 212
+          "bottom_signal_max_cycle": 84.2,
+          "days_bottom_zone": 213
         }
       ],
       "days_mvrv_below_1_this_cycle": 0
@@ -266,7 +282,7 @@
             "2013-12-04": 7.704061973442023,
             "2017-12-16": 9.354234932070232,
             "2021-11-08": 3.5338955722930834,
-            "2025-10-06": 2.5298647876421483
+            "2025-10-06": 2.529864787642148
           }
         },
         "nupl": {
@@ -322,7 +338,7 @@
             "2013-12-04": 4.718179179999999,
             "2017-12-16": 4.43076633,
             "2021-11-08": 2.854649564891,
-            "2025-10-06": 2.287145426879909
+            "2025-10-06": 2.2871454268799094
           }
         }
       },
@@ -361,7 +377,7 @@
       "weight": 0.2,
       "score": 9.3,
       "status": "ok",
-      "stale": false,
+      "stale": true,
       "indicators": {
         "etf_flow_30d": {
           "label": "ETF 30 日累計淨流入",
@@ -371,32 +387,32 @@
           "value": 2170.3623,
           "score": 32.0,
           "percentile": 55.8,
-          "as_of": "2026-10-05",
-          "stale": false,
+          "as_of": "2026-10-06",
+          "stale": true,
           "status": "ok",
           "method": "percentile",
-          "history_days": 970
+          "history_days": 971
         },
         "etf_flow_momentum": {
           "label": "ETF 流入動能",
           "unit": "百萬美元",
           "role": "score",
           "description": "最近 30 日淨流入減前 30 日，正值代表流入在加速。",
-          "value": -1367.8922,
+          "value": -1269.0469,
           "score": 0.0,
-          "percentile": 33.7,
-          "as_of": "2026-10-05",
-          "stale": false,
+          "percentile": 34.2,
+          "as_of": "2026-10-06",
+          "stale": true,
           "status": "ok",
           "method": "percentile",
-          "history_days": 940
+          "history_days": 941
         },
         "stable_growth_90d": {
           "label": "穩定幣 90 日增速",
           "unit": "%",
           "role": "score",
           "description": "穩定幣總供給 90 日成長率，代表場內可用的新資金。",
-          "value": 1.0244,
+          "value": 1.0338,
           "score": 5.1,
           "percentile": 38.3,
           "as_of": "2026-10-05",
@@ -410,14 +426,14 @@
           "unit": "%",
           "role": "score",
           "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
-          "value": -0.0312,
+          "value": -0.0295,
           "score": 0.0,
-          "percentile": 28.2,
-          "as_of": "2026-10-05",
+          "percentile": 28.8,
+          "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 1499
+          "history_days": 1500
         }
       },
       "effective_weight": 0.25
@@ -425,7 +441,7 @@
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 4.9,
+      "score": 5.1,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -434,14 +450,14 @@
           "unit": "%",
           "role": "score",
           "description": "永續合約多方付給空方的費率。越高代表槓桿做多越擁擠。",
-          "value": 4.7213,
-          "score": 2.6,
-          "percentile": 36.7,
-          "as_of": "2026-10-05",
+          "value": 3.5727,
+          "score": 0.0,
+          "percentile": 27.4,
+          "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 2579
+          "history_days": 2580
         },
         "oi_to_mcap": {
           "label": "未平倉量 / 市值",
@@ -450,26 +466,26 @@
           "description": "全市場 BTC 合約未平倉量占市值比例，代表槓桿規模。",
           "value": 0.0,
           "score": 0.0,
-          "percentile": 1.1,
-          "as_of": "2026-10-04",
+          "percentile": 1.4,
+          "as_of": "2026-10-05",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 182
+          "history_days": 183
         },
         "basis_ann": {
           "label": "期現基差（年化）",
           "unit": "%",
           "role": "score",
           "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
-          "value": 4.8808,
-          "score": 12.0,
-          "percentile": 42.8,
-          "as_of": "2026-10-05",
+          "value": 4.9968,
+          "score": 15.3,
+          "percentile": 44.9,
+          "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 2071
+          "history_days": 2072
         }
       },
       "effective_weight": 0.187
@@ -489,11 +505,11 @@
           "value": 70.2857,
           "score": 71.2,
           "percentile": 81.3,
-          "as_of": "2026-10-05",
+          "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
           "method": "percentile",
-          "history_days": 3160
+          "history_days": 3161
         },
         "google_trends": {
           "label": "Google Trends「bitcoin」",
@@ -519,7 +535,7 @@
   "sources": {
     "coinmetrics": {
       "fetched": true,
-      "last_date": "2026-10-04",
+      "last_date": "2026-10-05",
       "stale": false,
       "available": true,
       "errors": []
@@ -533,35 +549,35 @@
     },
     "fear_greed": {
       "fetched": true,
-      "last_date": "2026-10-05",
+      "last_date": "2026-10-06",
       "stale": false,
       "available": true,
       "errors": []
     },
     "funding": {
       "fetched": true,
-      "last_date": "2026-10-05",
+      "last_date": "2026-10-06",
       "stale": false,
       "available": true,
       "errors": []
     },
     "open_interest": {
       "fetched": true,
-      "last_date": "2026-10-04",
+      "last_date": "2026-10-05",
       "stale": false,
       "available": true,
       "errors": []
     },
     "basis": {
       "fetched": true,
-      "last_date": "2026-10-05",
+      "last_date": "2026-10-06",
       "stale": false,
       "available": true,
       "errors": []
     },
     "coinbase_premium": {
       "fetched": true,
-      "last_date": "2026-10-05",
+      "last_date": "2026-10-06",
       "stale": false,
       "available": true,
       "errors": []
@@ -569,7 +585,7 @@
     "etf": {
       "fetched": true,
       "last_date": "2026-10-02",
-      "stale": false,
+      "stale": true,
       "available": true,
       "errors": []
     }
