@@ -1163,6 +1163,8 @@ TEMPLATE = r"""<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>__TITLE__</title>
 <link rel="icon" href="__FAVICON__">
+<!-- 匿名流量統計（GoatCounter：不用 Cookie、不收集個人資料；本機預覽不計入）。分頁切換由 track() 逐頁計數 -->
+<script data-goatcounter="https://tidemark.goatcounter.com/count" data-goatcounter-settings='{"no_onload":true}' async src="https://gc.zgo.at/count.js"></script>
 <meta property="og:type" content="website"><meta property="og:site_name" content="Tidemark">
 <meta property="og:title" content="__TITLE__"><meta property="og:description" content="__OG_DESC__">
 <meta property="og:image" content="https://north7.github.io/tidemark/og.png?v=__DATE__"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
@@ -2014,7 +2016,7 @@ __TICKER__
     </div>
   </div>
   <footer>⟪資料來源：|Sources: ⟫Coin Metrics Community (CC BY-NC 4.0), DefiLlama, TFTC ⟪（ETF 資金流，CC BY 4.0）|(ETF flows, CC BY 4.0)⟫, OKX, Binance, Coinbase, alternative.me__EXTRA_SRC__.<br>
-  ⟪僅使用公開數據，不含任何個人資訊或交易功能；僅供參考，不構成投資建議。|Public data only; no personal information or trading features. For reference only — not investment advice.⟫<br>
+  ⟪僅使用公開數據，不含任何個人資訊或交易功能；僅供參考，不構成投資建議。本站使用不需 Cookie 的匿名流量統計（GoatCounter），不收集個人資料。|Public data only; no personal information or trading features. For reference only — not investment advice. This site uses cookie-free anonymous analytics (GoatCounter); no personal data is collected.⟫<br>
   <a href="__REPO__">⟪原始碼與方法說明|Source code &amp; methodology⟫</a> · ⟪產生時間|Generated⟫ __GENERATED__</footer>
 </section>
 
@@ -2304,7 +2306,11 @@ function parseHash(){let p=(location.hash.slice(1)||'b/overview').split('/'),mod
   if(p[0]==='b'){mode='bottom';p.shift();}
   if(p[0]==='overview'&&p[1]==='bottom'){mode='bottom';p=['overview'];}   /* 相容舊網址 */
   let v=p[0]||'overview';if(!VIEWS.includes(v))v='overview';return {mode,v,sub:p[1]};}
-function route(){const {mode,v,sub}=parseHash();st.mode=mode;
+/* 流量統計：每個分頁＋模式各算一個路徑，例如 /b/overview、/strat、/en/mid */
+function track(){const {mode,v}=parseHash(),side=v==='mid'||v==='strat',p=(location.pathname.includes('/en/')?'/en':'')+'/'+(mode==='bottom'&&!side?'b/':'')+v;
+  if(track.last===p)return;track.last=p;const go=()=>{try{window.goatcounter&&goatcounter.count&&goatcounter.count({path:p,title:document.title});}catch(e){}};
+  if(window.goatcounter&&goatcounter.count)go();else addEventListener('load',go,{once:true});}
+function route(){const {mode,v,sub}=parseHash();st.mode=mode;track();
   document.body.classList.toggle('mode-bottom',mode==='bottom');document.body.classList.toggle('view-mid',v==='mid');document.body.classList.toggle('view-strat',v==='strat');document.body.classList.toggle('view-side',v==='mid'||v==='strat');
   $$('.view').forEach(e=>e.classList.toggle('on',e.dataset.view===v));
   $$('.tab').forEach(e=>{e.classList.toggle('on',e.dataset.tab===v);e.setAttribute('href','#'+(mode==='bottom'?'b/':'')+e.dataset.tab);});
