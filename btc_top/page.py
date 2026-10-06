@@ -475,11 +475,29 @@ def _strategy(latest: dict) -> str:
     act = ("買進", "bought") if hold else ("賣出", "sold")
     since = (f"⟪自 {g['since']} 以 ${g['since_price']:,.0f} {act[0]}|{act[1]} on {g['since']} at ${g['since_price']:,.0f}⟫"
              if g.get("since") else "")
+    pos_pct = 100 if hold else 0
+    last = g["trades"][-1] if g.get("trades") else None
+    last_html = ""
+    if last:
+        chg = latest["price_usd"] / last["price"] - 1
+        days = (pd.Timestamp(g["as_of"]) - pd.Timestamp(last["date"])).days
+        is_buy = last["action"] == "buy"
+        effect = (f"⟪買回後價格 {_spct(chg)}|price {_spct(chg)} since buying⟫" if is_buy
+                  else f"⟪賣出後價格 {_spct(chg)}（{'避開下跌' if chg < 0 else '賣出後續漲'}）|price {_spct(chg)} since selling ({'drop avoided' if chg < 0 else 'kept rising'})⟫")
+        last_html = f"""
+      <div class="st-last {'buy' if is_buy else 'sell'}">
+        <div class="st-last-h"><span class="eyebrow">⟪最近一次操作|LAST TRADE⟫</span><span class="act {last['action']}">{'⟪買回|Buy⟫' if is_buy else '⟪賣出|Sell⟫'}</span></div>
+        <div class="st-last-b"><b>{last['date']}</b><span>@ ${last['price']:,.0f}</span></div>
+        <div class="st-last-m">{WHY.get(last['why'], last['why'])} · ⟪{days} 天前|{days} days ago⟫ · <b class="{'pos' if chg >= 0 else 'neg'}">{effect}</b></div>
+      </div>"""
     status = f"""
     <div class="card st-card st-{cls}">
       <div class="eyebrow">STATUS · {g['as_of']}</div>
-      <div class="st-big">{state}</div>
-      <p class="st-since">{since}</p>
+      <div class="st-row">
+        <div class="st-big">{state}</div>
+        <div class="st-pos"><span>⟪倉位|Position⟫</span><b>{pos_pct}<small>%</small></b>
+          <i class="st-bar"><u style="width:{pos_pct}%"></u></i><em>⟪BTC {pos_pct}%・現金 {100 - pos_pct}%|BTC {pos_pct}% · cash {100 - pos_pct}%⟫</em></div>
+      </div>{last_html}
       <div class="st-grid">
         <div><span>⟪頂部訊號|Top signal⟫</span><b>{now['top_signal']:.0f}<small>/50</small></b></div>
         <div><span>⟪頂部時機|Top timing⟫</span><b>{now['top_timing']:.0f}<small>/50</small></b></div>
@@ -520,7 +538,8 @@ def _strategy(latest: dict) -> str:
             pc = f"{chg * 100:+,.0f}%".replace("-", "−") if chg is not None else ""
             note = "⟪持有中|holding⟫" if chg is None else f"⟪持有 {pc}|held {pc}⟫"
         bad = t["action"] == "sell" and chg is not None and chg > 0
-        trs.append(f"<tr class='{'bad' if bad else ''}'><td>{t['date']}<small>{WHY.get(t['why'], t['why'])}</small></td>"
+        is_last = t is g["trades"][-1]
+        trs.append(f"<tr class='{'bad' if bad else ''}{' last' if is_last else ''}'><td>{t['date']}{' <span class=new>⟪最近|Latest⟫</span>' if is_last else ''}<small>{WHY.get(t['why'], t['why'])}</small></td>"
                    f"<td><span class='act {t['action']}'>{'⟪賣出|Sell⟫' if t['action'] == 'sell' else '⟪買回|Buy⟫'}</span></td>"
                    f"<td>${t['price']:,.0f}</td><td>{note}</td></tr>")
     trades = f"""
@@ -1592,6 +1611,26 @@ table.data.fit.st-trades td:last-child{white-space:normal;overflow:visible;line-
 @media (min-width:900px){.wrap{max-width:none;padding-left:max(28px,3vw);padding-right:max(28px,3vw)}
   .mode-bar{margin-left:calc(-1 * max(28px,3vw));margin-right:calc(-1 * max(28px,3vw))}}
 @media (min-width:1200px){.ind-grid{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}.cold-groups .ind-grid{grid-template-columns:1fr}}
+
+.st-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.st-pos{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:150px}
+.st-pos span{font:600 10.5px var(--mono);letter-spacing:.12em;color:var(--mut)}
+.st-pos b{font:900 clamp(44px,5vw,72px)/1 var(--disp);letter-spacing:-.04em}.st-pos b small{font-size:.45em;color:var(--mut)}
+.st-bar{display:block;width:100%;height:6px;border-radius:99px;background:var(--line2);overflow:hidden}
+.st-bar u{display:block;height:100%;background:linear-gradient(90deg,var(--a2),var(--a1));box-shadow:0 0 12px var(--a1)}
+.st-pos em{font:500 11px var(--mono);font-style:normal;color:var(--mut)}
+.st-last{border:1px solid color-mix(in srgb,var(--a1) 45%,transparent);background:color-mix(in srgb,var(--a1) 9%,transparent);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.st-last.buy{border-color:color-mix(in srgb,var(--s-bot) 50%,transparent);background:color-mix(in srgb,var(--s-bot) 8%,transparent)}
+.st-last.sell{border-color:color-mix(in srgb,var(--s-sig) 50%,transparent);background:color-mix(in srgb,var(--s-sig) 8%,transparent)}
+.st-last-h{display:flex;justify-content:space-between;align-items:center}
+.st-last .act{font:700 12px var(--mono);padding:3px 10px;border-radius:6px}
+.st-last .act.buy{color:var(--s-bot);background:color-mix(in srgb,var(--s-bot) 16%,transparent)}
+.st-last .act.sell{color:var(--s-sig);background:color-mix(in srgb,var(--s-sig) 16%,transparent)}
+.st-last-b{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.st-last-b b{font:800 26px/1 var(--disp);letter-spacing:-.02em}.st-last-b span{font:600 18px var(--mono)}
+.st-last-m{font-size:13px;color:var(--mut)}.st-last-m b.pos{color:var(--s-bot)}.st-last-m b.neg{color:var(--s-sig)}
+.st-trades tr.last td{background:color-mix(in srgb,var(--a1) 10%,transparent)}
+.st-trades .new{font:700 10px var(--mono);color:#111;background:var(--a1);padding:1px 6px;border-radius:5px;margin-left:6px;vertical-align:1px}
 </style>
 </head>
 <body>
