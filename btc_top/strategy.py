@@ -16,6 +16,7 @@ import pandas as pd
 from btc_top import scoring as S
 
 ARM_SIG, ARM_TIM, BUY_BSIG = 50, 50, 50
+FINAL_DATE = "2026-10-06"  # 策略定案日：之前是回測，之後是實際追蹤（規則不可再為績效調整）
 BATCH_KEEP = 2 / 3  # 分批版（對照用）：進入警戒時先賣 1/3，週線 Supertrend 轉空再賣完
 FEE = 0.001
 START = "2014-01-01"
@@ -138,10 +139,24 @@ def compute_strategy(ind: pd.DataFrame, live: pd.DataFrame, st: pd.Series, today
                 "bottom_signal": _r(live["bsig"].iloc[-1], 1),
                 "supertrend": "up" if st.iloc[-1] > 0 else "down"},
         "backtest": m, "by_start": stats, "trades": rows, "alerts": alerts,
+        "live": _live(price, pos, rows),
         "batch": {"keep_on_alert": _r(BATCH_KEEP), "position": _r(pos_b.iloc[-1]), "backtest": mb, "by_start": stats_b},
     }
     df = pd.DataFrame({"strat_eq": eq, "strat_bh": bh, "strat_eq_b": eqb, "strat_pos": pos.reindex(eq.index)})
     return df, info
+
+
+def _live(price: pd.Series, pos: pd.Series, rows: list) -> dict:
+    """定案日之後的實際追蹤（不偷看未來的每日訊號，與回測相同的規則）。"""
+    p = price[FINAL_DATE:].dropna()
+    out = {"final_date": FINAL_DATE, "days": int(max(0, (price.index[-1] - pd.Timestamp(FINAL_DATE)).days)),
+           "trades": [t for t in rows if t["date"] >= FINAL_DATE]}
+    if len(p) >= 2:
+        m, _, _ = backtest(price, pos, FINAL_DATE)
+        out.update({"strategy": m["strategy"], "hold": m["hold"], "max_dd": m["max_dd"], "max_dd_hold": m["max_dd_hold"]})
+    else:
+        out.update({"strategy": 1.0, "hold": 1.0, "max_dd": 0.0, "max_dd_hold": 0.0})
+    return out
 
 
 def _r(x, n=4):

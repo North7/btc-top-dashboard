@@ -92,3 +92,19 @@ def compute_scenarios(ind: pd.DataFrame, timing: dict, today: pd.Timestamp) -> d
         "dates": [str(d.date()) for d in dates],
         "paths": {k: path(v) for k, v in sc.items()},
     }
+
+
+def track_scenarios(snap: dict, price: pd.Series) -> dict:
+    """定案日凍結的三條路徑 vs 實際價格：今天各情境「當時預估的價格」與實際的差距、最貼近哪一條。"""
+    p = price.dropna()
+    d, now = p.index[-1], float(p.iloc[-1])
+    dates = pd.to_datetime(snap["dates"])
+    t = np.array([(x - dates[0]).days for x in dates], float)
+    td = (d - dates[0]).days
+    rows = {}
+    for k, path in snap["paths"].items():
+        v = float(np.exp(np.interp(td, t, np.log(path))))
+        rows[k] = {"expected": round(v, 0), "diff": round(now / v - 1, 4) + 0.0}
+    closest = min(rows, key=lambda k: abs(np.log(now / rows[k]["expected"])))
+    return {"snapshot_date": snap["as_of"], "as_of": str(d.date()), "price": round(now, 2), "rows": rows, "closest": closest,
+            "tops": snap["tops"], "top_date": snap["top_date"]}

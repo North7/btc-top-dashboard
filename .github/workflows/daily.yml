@@ -3,6 +3,11 @@ name: daily-update
 on:
   # 主要觸發：外部定時服務（cron-job.org）每天 UTC 00:15 呼叫 workflow_dispatch（GitHub 排程實測常延遲約 5 小時）
   workflow_dispatch:
+    inputs:
+      test_notify:
+        description: "只發送一則 LINE 測試通知（不更新數據）"
+        type: boolean
+        default: false
   # 備援：GitHub 自身排程；當天已更新就略過
   schedule:
     - cron: "15 0 * * *"
@@ -28,14 +33,16 @@ jobs:
       - name: 檢查今天是否已更新（排程觸發才會略過；手動或外部觸發一律執行）
         id: chk
         run: |
+          if [ "${{ inputs.test_notify }}" = "true" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "測試通知模式"; exit 0
+          fi
           if [ "${{ github.event_name }}" = "schedule" ] \
              && git log -30 --format=%s | grep -qx "data: daily update $(date -u +%Y-%m-%d)"; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "今天已更新，備援排程略過"
           fi
 
-      - uses: actions/setup-python@v5
-        if: steps.chk.outputs.skip != 'true'
+      - uses: actions/setup-python@v5   # 測試／故障通知也需要 Python，因此一律安裝
         with:
           python-version: "3.11"
           cache: pip
@@ -46,6 +53,10 @@ jobs:
       - name: 抓取數據並計算分數
         if: steps.chk.outputs.skip != 'true'
         run: python run.py
+
+      - name: 自動檢查輸出（有錯誤就停止、不 commit）
+        if: steps.chk.outputs.skip != 'true'
+        run: python -m btc_top.checks
 
       - name: Commit 更新
         if: steps.chk.outputs.skip != 'true'
@@ -59,3 +70,25 @@ jobs:
             git commit -m "data: daily update $(date -u +%Y-%m-%d)"
             git push
           fi
+
+      - name: LINE 通知（重要事件／新的資料警告）
+        if: steps.chk.outputs.skip != 'true'
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+        run: python -m btc_top.notify
+
+      - name: LINE 測試通知
+        if: inputs.test_notify
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+        run: pip install -q requests pandas && python -m btc_top.notify --test
+
+      - name: LINE 故障通知
+        if: failure()
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: pip install -q requests pandas && python -m btc_top.notify --failure

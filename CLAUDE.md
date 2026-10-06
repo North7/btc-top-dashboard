@@ -115,6 +115,16 @@ MVRV Z-score、NUPL、Puell Multiple、Realized Price 倍數（價格 / 實現�
 路徑形狀＝過去三輪低點→頂部走法平均（平滑）。必須標示「情境推演，不是預測」，不提供機率（樣本 3–4 次，任何機率都無意義）。
 計算失敗不可讓流程失敗。
 
+## 通知、檢查與定案後追蹤（2026-10 加入，經使用者同意）
+- `btc_top/checks.py`：每日輸出自動檢查（必要欄位、數值範圍、未替換佔位符、雙語標記、英文頁殘留中文）。有錯誤就停止、不 commit；
+  資料過期等只列為警告。新增頁面文字後務必能通過此檢查。
+- `btc_top/events.py`：比較前一次 latest.json，偵測底部／頂部訊號換級、策略警戒／買賣、週線 Supertrend 翻轉、週期結構判定、
+  cron 權杖到期提醒（`CRON_TOKEN_EXPIRES`，換權杖時要更新），寫入 `latest.events`。
+- `btc_top/notify.py`：LINE 官方帳號 Messaging API push（Secrets：LINE_CHANNEL_TOKEN、LINE_USER_ID）。有事件或新出現的資料警告才發；
+  工作流程失敗時發故障通知；手動執行工作流程勾選 test_notify 可發測試訊息。LINE Notify 已於 2025-03 停止服務，勿使用。
+- 定案後追蹤：策略定案日 `FINAL_DATE = 2026-10-06`（之後規則不可為績效調整）；`data/scenario_snapshot.json` 為定案時凍結的情境路徑，
+  不可覆寫或刪除；頁面顯示定案後的策略績效與「實際價格最貼近哪條情境」。
+
 ## 輸出
 - `top_signal`：頂部訊號（主要數字）；`signal_level`：`none` / `window`（≥ 50）/ `alert`（≥ 70）
 - `heat_score`：熱度 0–100 加權總分；`composite_score` 保留為同值（相容舊欄位）

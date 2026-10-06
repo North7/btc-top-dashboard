@@ -17,7 +17,9 @@ import pandas as pd
 from btc_top import sources
 from btc_top.midterm import compute_midterm
 from btc_top.strategy import compute_strategy, projected_arm
-from btc_top.scenarios import compute_scenarios
+from btc_top.scenarios import compute_scenarios, track_scenarios
+from btc_top.events import detect as detect_events
+from btc_top.checks import run_checks
 from btc_top.page import render_page
 from btc_top.scoring import (BOTTOM_STRONG, BOTTOM_WINDOW, CATEGORIES, COLD_GROUP_LABEL, COLD_INDICATORS,
                              COLD_WEIGHTS, HALVINGS, SIGNAL_ALERT, SIGNAL_WINDOW, TIMING_FLAT, TIMING_RAMP,
@@ -338,11 +340,31 @@ def main():
     except Exception as e:  # noqa: BLE001
         print("未來情境計算失敗：", e)
     strat_info["projected_arm"] = projected_arm(timing, today) if strat_info["state"] == "holding" and not strat_info["armed"] else None
+    # 定案後追蹤：情境路徑在定案日凍結一份，之後每天比較實際價格
+    if latest.get("scenarios"):
+        snap = DATA / "scenario_snapshot.json"
+        if not snap.exists():
+            snap.write_text(json.dumps({k: latest["scenarios"][k] for k in ("as_of", "top_date", "tops", "dates", "paths")}, ensure_ascii=False))
+        latest["scenarios"]["tracking"] = track_scenarios(json.loads(snap.read_text()), ind["price"])
+
     DOCS.mkdir(parents=True, exist_ok=True)
+    old_path = DOCS / "latest.json"
+    try:
+        old = json.loads(old_path.read_text()) if old_path.exists() else None
+    except Exception:  # noqa: BLE001
+        old = None
+    # 與上一次的輸出比較（GitHub 上是前一天 commit 的版本；同一天重跑時事件已在第一次通知過，不會重複）
+    latest["events"] = detect_events(old, latest)
     (DOCS / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2))
     render_page(latest, hist, ind, DOCS / "index.html", defs, lang="zh")
     render_page(latest, hist, ind, DOCS / "en" / "index.html", defs, lang="en")
     (DOCS / ".nojekyll").touch()
+    # 健康檢查：只把「新出現」的警告標出來，避免同一問題每天重複通知
+    _, warns = run_checks(DOCS)
+    key = lambda w: w.split("（")[0]
+    old_keys = {key(w) for w in ((old or {}).get("health") or {}).get("warnings", [])}
+    latest["health"] = {"warnings": warns, "new_warnings": [w for w in warns if key(w) not in old_keys]}
+    (DOCS / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2))
     print(f"底部訊號 {latest['bottom_signal']}（{latest['bottom_level']}） 冷度 {latest['cold_score']} "
           f"底部時機 {latest['bottom_timing_score']}　{bottom['cycle_test']['verdict']}")
     print(f"完成：{latest['date']} 頂部訊號 {latest['top_signal']}（{latest['signal_level']}） "

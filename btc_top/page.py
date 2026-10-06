@@ -490,6 +490,36 @@ def _future(latest: dict) -> str:
   </div>"""
 
 
+SCN_ZH = {"conservative": "⟪保守|Conservative⟫", "base": "⟪中間|Base⟫", "optimistic": "⟪樂觀|Optimistic⟫"}
+
+
+def _live(latest: dict) -> str:
+    """週期策略頁：定案日之後的實際追蹤（策略績效＋凍結情境 vs 實際價格）。"""
+    g = (latest.get("strategy") or {}).get("live")
+    if not g:
+        return ""
+    tr = (latest.get("scenarios") or {}).get("tracking")
+    rows = ""
+    if tr:
+        rows = "".join(
+            f"<tr class='{'on' if k == tr['closest'] else ''}'><td>{SCN_ZH[k]}{' <span class=new>⟪最貼近|Closest⟫</span>' if k == tr['closest'] else ''}</td>"
+            f"<td>${v['expected']:,.0f}</td><td>${tr['price']:,.0f}</td><td class='{'pos' if v['diff'] >= 0 else 'neg'}'>{_spct(v['diff'])}</td>"
+            f"<td>{_k(tr['tops'][k])}</td></tr>" for k, v in tr["rows"].items())
+        rows = f"""
+      <div class="scroll"><table class="data fit live-t"><thead><tr><th>⟪情境|Scenario⟫</th><th>⟪當時預估今天|Expected today⟫</th><th>⟪實際|Actual⟫</th><th>⟪差距|Gap⟫</th><th>⟪頂部|Top⟫</th></tr></thead><tbody>{rows}</tbody></table></div>"""
+    n = len(g["trades"])
+    tline = ("⟪定案後尚無交易|No trades since finalization⟫" if not n else
+             "⟪定案後交易：|Trades since finalization: ⟫" + "⟪、|, ⟫".join(f"{t['date']} {'⟪賣出|sell⟫' if t['action'] == 'sell' else '⟪買回|buy⟫'} ${t['price']:,.0f}" for t in g["trades"]))
+    return f"""
+  <div class="card st-live">
+    <div class="card-head"><div><div class="eyebrow">LIVE · ⟪定案後實際追蹤|OUT-OF-SAMPLE TRACKING⟫</div><h3>⟪自定案日 {g['final_date']} 起（第 {g['days']} 天）|Since finalization on {g['final_date']} (day {g['days']})⟫</h3></div></div>
+    <p class="muted small" style="margin:0 0 10px">⟪規則在 {g['final_date']} 定案，之前的績效是回測（規則是看過歷史才挑的），之後是完全沒看過的新數據——這裡才是真正的檢驗。情境路徑也在定案時凍結一份，用來比對實際走勢。|The rules were finalized on {g['final_date']}. Everything before is a backtest (the rules were chosen with history in view); everything after is unseen data — the real test. The scenario paths were frozen at the same time to compare with what actually happens.⟫</p>
+    <div class="live-k"><div><span>⟪策略|Strategy⟫</span><b>{g['strategy']:.2f}×</b></div><div><span>⟪持有|Hold⟫</span><b>{g['hold']:.2f}×</b></div>
+      <div><span>⟪策略最大回撤|Strat max DD⟫</span><b>{_spct(g['max_dd'], False)}</b></div><div><span>⟪持有最大回撤|Hold max DD⟫</span><b>{_spct(g['max_dd_hold'], False)}</b></div></div>
+    <p class="small" style="margin:8px 0">{tline}{f"⟪；情境路徑凍結於 {tr['snapshot_date']}|; scenario paths frozen on {tr['snapshot_date']}⟫" if tr else ""}</p>{rows}
+  </div>"""
+
+
 def _strategy(latest: dict) -> str:
     """週期策略頁：目前狀態、規則、模擬資金曲線、各起點績效、交易紀錄、限制。"""
     g = latest.get("strategy")
@@ -618,6 +648,7 @@ def _strategy(latest: dict) -> str:
   <div class="view-head"><div class="sec-n">⟪週期策略|CYCLE STRATEGY⟫ · ⟪回測模擬|BACKTEST⟫</div><h2>⟪週期|Cycle⟫ <span>⟪策略|strategy⟫</span></h2>
     <p>⟪「警戒 + 趨勢確認」：用頂部／底部訊號判斷週期位置，用週線 Supertrend 確認趨勢。逐輪回測自 2014 年起 {_x(bt['strategy'])}，同期持有 {_x(bt['hold'])}。|“Alert + trend confirmation”: the top/bottom signals locate the cycle and the weekly Supertrend confirms the trend. Walk-forward backtest since 2014: {_x(bt['strategy'])} vs {_x(bt['hold'])} for holding.⟫</p></div>
   <div class="st-top">{status}{rules}</div>
+  {_live(latest)}
   <div class="card st-chart">
     <div class="card-head"><div><div class="eyebrow">EQUITY</div><h3>⟪模擬資金曲線|Simulated equity⟫</h3></div>
       <div class="seg" data-g="strat"><button data-y="2014" class="on">2014</button><button data-y="2018">2018</button><button data-y="2022">2022</button></div></div>
@@ -628,6 +659,7 @@ def _strategy(latest: dict) -> str:
       <span class="static"><i style="height:0;background:none;border-top:2px dashed var(--strat);opacity:.6"></i>⟪分批版（警戒先賣 1/3）|Batch (sell 1/3 on alert)⟫</span>
       <span class="static"><i style="background:var(--price)"></i>⟪持續持有|Buy &amp; hold⟫</span>
       <span class="static"><i style="height:10px;background:color-mix(in srgb,var(--topline) 35%,transparent);border-left:2px dashed var(--topline)"></i>⟪警戒期間|Alert period⟫</span>
+      <span class="static"><i style="height:0;background:none;border-top:2px dotted var(--fg)"></i>⟪定案日（之後為實際追蹤）|Finalized (live after this)⟫</span>
       <span class="static"><i class="dash" style="border-top-color:var(--s-sig)"></i>⟪賣出|Sell⟫</span>
       <span class="static"><i class="dash" style="border-top-color:var(--s-bot)"></i>⟪買回|Buy⟫</span>
     </div>
@@ -1016,6 +1048,7 @@ def render_page(latest: dict, hist: pd.DataFrame, ind: pd.DataFrame, path: Path,
         "__STRAT_TRADES__": json.dumps({**{k: [t["date"] for t in latest.get("strategy", {}).get("trades", []) if t["action"] == k] for k in ("sell", "buy")},
                                         # 各起點 1 月 1 日的精確基準（圖表資料一年前為每週一點）
                                         "alerts": latest.get("strategy", {}).get("alerts", []),
+                                        "final": (latest.get("strategy", {}).get("live") or {}).get("final_date"),
                                         "base": {y: [float(hist.loc[f"{y}-01-01", c]) for c in ("strat_eq", "strat_bh", "strat_eq_b")]
                                                  for y in ("2014", "2018", "2022")} if "strat_eq" in hist else {}}),
         "__MID_EVENTS__": json.dumps({k: [str(d.date()) for d in _mid_events(hist["mid_" + k + "_signal"] > 0)]
@@ -1781,6 +1814,15 @@ table.data.fit.st-trades td:last-child{white-space:normal;overflow:visible;line-
 .ref-tag{font:700 10px var(--mono);color:var(--mut);border:1px solid var(--line2);border-radius:5px;padding:1px 6px;margin-left:auto}
 .ref-dp{font:600 13px var(--mono);color:var(--mut)}
 .ref-note{display:block;font-size:12px;color:var(--mut);margin:4px 0 2px}
+
+.st-live{margin-top:14px;border-color:color-mix(in srgb,var(--a1) 40%,transparent)}
+.live-k{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.live-k div{padding:10px 10px 8px 0}.live-k div+div{padding-left:12px;border-left:1px solid var(--line)}
+.live-k span{display:block;font:600 10.5px var(--mono);letter-spacing:.08em;color:var(--mut)}
+.live-k b{display:block;font:900 28px/1.1 var(--disp);letter-spacing:-.02em;margin-top:4px}
+.live-t tr.on td{background:color-mix(in srgb,var(--a1) 10%,transparent)}
+.live-t td.pos{color:var(--s-bot)}.live-t td.neg{color:var(--s-sig)}
+@media (max-width:899px){.live-k{grid-template-columns:1fr 1fr}.live-k div:nth-child(3){padding-left:0;border-left:0}.live-k div:nth-child(n+3){border-top:1px solid var(--line)}}
 </style>
 </head>
 <body>
@@ -1999,7 +2041,7 @@ function drawStrat(){const el=$('#c-strat');if(!el||!D.seq)return;const s=st.str
   const al=(STR.alerts||[]).filter(x=>!x.to||x.to>=since);
   chart(el,i0,[{a:b,c:'--price',w:1.6},{a:c,c:'--strat',w:1.5,dash:'5 5',op:.55},{a:a,c:'--strat',w:2.6,glow:true}],{log:true,axis:true,hover:s.hover,
     bands:al.map(x=>({from:x.from<since?since:x.from,to:x.to,c:'--topline',op:.14})),
-    marks:[{d:al.map(x=>x.from).filter(x=>x>=since),c:'--topline',dash:'5 3',op:.9},{d:STR.sell.filter(x=>x>=since),c:'--s-sig',dash:'2 4',op:.85},{d:STR.buy.filter(x=>x>=since),c:'--s-bot',dash:'2 4',op:.85}]});
+    marks:[{d:STR.final?[STR.final]:[],c:'--fg',dash:'1 3',op:.7},{d:al.map(x=>x.from).filter(x=>x>=since),c:'--topline',dash:'5 3',op:.9},{d:STR.sell.filter(x=>x>=since),c:'--s-sig',dash:'2 4',op:.85},{d:STR.buy.filter(x=>x>=since),c:'--s-bot',dash:'2 4',op:.85}]});
   const j=i0+(s.hover==null?D.d.length-1-i0:s.hover),f=v=>v==null?'—':(v>=100?Math.round(v).toLocaleString():v.toFixed(2))+'×';
   $('#tip-strat').innerHTML=`<b>${D.d[j]}</b><span>⟪策略|Strategy⟫ <b>${f(a[j])}</b></span><span>⟪分批版|Batch⟫ <b>${f(c[j])}</b></span><span>⟪持有|Hold⟫ <b>${f(b[j])}</b></span>${al.some(x=>D.d[j]>=x.from&&(!x.to||D.d[j]<=x.to))?'<span class="tip-al">⟪警戒中|On alert⟫</span>':''}<span>${D.p[j]==null?'':'$'+Math.round(D.p[j]).toLocaleString()}</span>`;}
 /* 未來情境圖：2022 起的實際價格＋三條情境路徑（對數刻度、依日期） */

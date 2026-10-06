@@ -1,12 +1,12 @@
 {
   "date": "2026-10-06",
-  "generated_at": "2026-10-06T07:01:02Z",
+  "generated_at": "2026-10-06T09:30:14Z",
   "price_usd": 85834.53,
   "price_date": "2026-10-05",
   "top_signal": 0.0,
   "signal_level": "none",
-  "heat_score": 44.8,
-  "composite_score": 44.8,
+  "heat_score": 45.4,
+  "composite_score": 45.4,
   "timing_score": 0.0,
   "hot_categories": 0,
   "zone": "warm",
@@ -582,6 +582,15 @@
         "why": "tim"
       }
     ],
+    "live": {
+      "final_date": "2026-10-06",
+      "days": 0,
+      "trades": [],
+      "strategy": 1.0,
+      "hold": 1.0,
+      "max_dd": 0.0,
+      "max_dd_hold": 0.0
+    },
     "batch": {
       "keep_on_alert": 0.6667,
       "position": 1.0,
@@ -775,7 +784,7 @@
     "capital_flows": {
       "label": "資金流與機構",
       "weight": 0.2,
-      "score": 10.7,
+      "score": 13.2,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -812,7 +821,7 @@
           "unit": "%",
           "role": "score",
           "description": "穩定幣總供給 90 日成長率，代表場內可用的新資金。",
-          "value": 1.8907,
+          "value": 1.8951,
           "score": 10.7,
           "percentile": 42.0,
           "as_of": "2026-10-06",
@@ -826,9 +835,9 @@
           "unit": "%",
           "role": "score",
           "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
-          "value": -0.0282,
-          "score": 0.0,
-          "percentile": 29.5,
+          "value": -0.0095,
+          "score": 9.9,
+          "percentile": 41.4,
           "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
@@ -841,7 +850,7 @@
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 5.1,
+      "score": 5.0,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -850,9 +859,9 @@
           "unit": "%",
           "role": "score",
           "description": "永續合約多方付給空方的費率。越高代表槓桿做多越擁擠。",
-          "value": 3.1696,
+          "value": 3.2395,
           "score": 0.0,
-          "percentile": 24.5,
+          "percentile": 25.0,
           "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
@@ -864,9 +873,9 @@
           "unit": "%",
           "role": "score",
           "description": "全市場 BTC 合約未平倉量占市值比例，代表槓桿規模。",
-          "value": 0.1865,
+          "value": 0.1877,
           "score": 0.0,
-          "percentile": 18.6,
+          "percentile": 19.7,
           "as_of": "2026-10-05",
           "stale": false,
           "status": "ok",
@@ -878,9 +887,9 @@
           "unit": "%",
           "role": "score",
           "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
-          "value": 4.9962,
-          "score": 15.2,
-          "percentile": 44.9,
+          "value": 4.9798,
+          "score": 15.0,
+          "percentile": 44.7,
           "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
@@ -1646,6 +1655,37 @@
         323341.0,
         326916.0
       ]
+    },
+    "tracking": {
+      "snapshot_date": "2026-10-05",
+      "as_of": "2026-10-05",
+      "price": 85834.53,
+      "rows": {
+        "conservative": {
+          "expected": 85835.0,
+          "diff": 0.0
+        },
+        "base": {
+          "expected": 85835.0,
+          "diff": 0.0
+        },
+        "optimistic": {
+          "expected": 85835.0,
+          "diff": 0.0
+        }
+      },
+      "closest": "conservative",
+      "tops": {
+        "conservative": 110202.0,
+        "base": 183824.0,
+        "optimistic": 326916.0
+      },
+      "top_date": "2029-07-30"
     }
+  },
+  "events": [],
+  "health": {
+    "warnings": [],
+    "new_warnings": []
   }
 }
