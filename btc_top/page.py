@@ -162,7 +162,7 @@ def _series(hist: pd.DataFrame, ind: pd.DataFrame, defs: dict) -> dict:
     for k, (grp, label, col, unit, desc) in COLD_INDICATORS.items():
         cols["v_" + k] = (hist[col] if col in hist else ind[col].reindex(hist.index))
         cols["s_" + k] = hist["coldscore_" + k]
-    for k, col in (("seq", "strat_eq"), ("sbh", "strat_bh"), ("ma50", "mid_ma50"), ("ma200", "mid_ma200"), ("ma20w", "mid_ma20w"), ("stl", "mid_st_line"), ("std", "mid_st_dir")):
+    for k, col in (("seq", "strat_eq"), ("sbh", "strat_bh"), ("seqb", "strat_eq_b"), ("ma50", "mid_ma50"), ("ma200", "mid_ma200"), ("ma20w", "mid_ma20w"), ("stl", "mid_st_line"), ("std", "mid_st_dir")):
         if col in hist:
             cols[k] = hist[col]
     cols["v_days_since_halving"] = hist["days_since_halving"]
@@ -476,6 +476,17 @@ def _strategy(latest: dict) -> str:
     since = (f"⟪自 {g['since']} 以 ${g['since_price']:,.0f} {act[0]}|{act[1]} on {g['since']} at ${g['since_price']:,.0f}⟫"
              if g.get("since") else "")
     pos_pct = 100 if hold else 0
+    bpos = round((g.get("batch") or {}).get("position", pos_pct / 100) * 100)
+    if g["armed"]:
+        a0 = (g.get("alerts") or [{}])[-1].get("from", "")
+        alert_chip = (f'<div class="st-alert on"><i></i>⟪警戒中（自 {a0}）：週線 Supertrend 轉空即全部賣出|On alert (since {a0}): '
+                      f'sells everything when the weekly Supertrend turns down⟫</div>')
+    elif hold:
+        alert_chip = ('<div class="st-alert"><i></i>⟪未警戒：頂部訊號、頂部時機皆未達 50|Not on alert: top signal and top timing '
+                      'are both below 50⟫</div>')
+    else:
+        alert_chip = '<div class="st-alert"><i></i>⟪空手：等待買回條件|In cash: waiting for a buy-back trigger⟫</div>'
+
     last = g["trades"][-1] if g.get("trades") else None
     last_html = ""
     if last:
@@ -494,9 +505,10 @@ def _strategy(latest: dict) -> str:
     <div class="card st-card st-{cls}">
       <div class="eyebrow">STATUS · {g['as_of']}</div>
       <div class="st-row">
-        <div class="st-big">{state}</div>
+        <div class="st-left"><div class="st-big">{state}</div>{alert_chip}</div>
         <div class="st-pos"><span>⟪倉位|Position⟫</span><b>{pos_pct}<small>%</small></b>
-          <i class="st-bar"><u style="width:{pos_pct}%"></u></i><em>⟪BTC {pos_pct}%・現金 {100 - pos_pct}%|BTC {pos_pct}% · cash {100 - pos_pct}%⟫</em></div>
+          <i class="st-bar"><u style="width:{pos_pct}%"></u></i><em>⟪BTC {pos_pct}%・現金 {100 - pos_pct}%|BTC {pos_pct}% · cash {100 - pos_pct}%⟫</em>
+          <em class="st-pos-b">⟪分批版 {bpos}%|Batch version {bpos}%⟫</em></div>
       </div>{last_html}
       <div class="st-grid">
         <div><span>⟪頂部訊號|Top signal⟫</span><b>{now['top_signal']:.0f}<small>/50</small></b></div>
@@ -517,16 +529,18 @@ def _strategy(latest: dict) -> str:
       <p class="muted small">⟪頂部訊號與時機會提早亮，所以只用來「進入警戒」；真正賣出要等週線趨勢確認轉空。門檻固定為 50，未針對歷史最佳化；40／50／60 的 27 種組合回測都勝過持有。|The top signal and timing light up early, so they only put the strategy on alert; the actual sale waits for the weekly trend to confirm. Thresholds are fixed at 50, not fitted to history; all 27 combinations of 40/50/60 beat holding in backtests.⟫</p>
     </div>"""
     bt = g["backtest"]
+    bstats = (g.get("batch") or {}).get("by_start") or [None] * len(g["by_start"])
     rows = "".join(
         f"<tr><td>{x['start']}</td><td><b>{_x(x['strategy'])}</b></td><td>{_x(x['hold'])}</td><td><b class='st-ratio'>{x['ratio']:.1f}×</b></td>"
+        f"<td class='st-bt'>{'—' if y is None else format(y['ratio'], '.1f') + '×'}</td>"
         f"<td class='wd'>{_spct(x['cagr'], False)}</td><td class='wd'>{_spct(x['cagr_hold'], False)}</td><td>{_spct(x['max_dd'], False)}</td><td class='wd'>{_spct(x['max_dd_hold'], False)}</td></tr>"
-        for x in g["by_start"])
+        for x, y in zip(g["by_start"], bstats))
     perf = f"""
     <div class="card">
       <div class="card-head"><div><div class="eyebrow">PERFORMANCE</div><h3>⟪各起點績效|Performance by start year⟫</h3></div></div>
-      <div class="scroll"><table class="data fit"><thead><tr><th>⟪起點|Start⟫</th><th>⟪策略|Strategy⟫</th><th>⟪持有|Hold⟫</th><th>⟪策略／持有|Strat / hold⟫</th>
+      <div class="scroll"><table class="data fit"><thead><tr><th>⟪起點|Start⟫</th><th>⟪策略|Strategy⟫</th><th>⟪持有|Hold⟫</th><th>⟪策略／持有|Strat / hold⟫</th><th>⟪分批版／持有|Batch / hold⟫</th>
         <th class="wd">⟪策略年化|Strat CAGR⟫</th><th class="wd">⟪持有年化|Hold CAGR⟫</th><th>⟪策略最大回撤|Strat max DD⟫</th><th class="wd">⟪持有最大回撤|Hold max DD⟫</th></tr></thead><tbody>{rows}</tbody></table></div>
-      <p class="muted small" style="margin:8px 0 0">⟪從各年 1 月 1 日起投入 1 單位，至今的資金倍數。手續費每次 0.1%，空手時現金不計利息。|Growth of 1 unit invested on January 1 of each year to today. 0.1% fee per trade; cash earns nothing.⟫</p>
+      <p class="muted small" style="margin:8px 0 0">⟪從各年 1 月 1 日起投入 1 單位，至今的資金倍數。手續費每次 0.1%，空手時現金不計利息。分批版：進入警戒時先賣 1/3、週線 Supertrend 轉空再賣完，其餘相同（對照用）。|Growth of 1 unit invested on January 1 of each year to today. 0.1% fee per trade; cash earns nothing. Batch version: sells 1/3 on alert and the rest when the weekly Supertrend turns down; otherwise identical (for comparison).⟫</p>
     </div>"""
     trs = []
     for t in g["trades"]:
@@ -571,11 +585,13 @@ def _strategy(latest: dict) -> str:
     <svg class="chart" id="c-strat" height="380" role="img" aria-label="⟪策略與持有的資金曲線|Strategy vs hold equity⟫"></svg>
     <div class="legend">
       <span class="static"><i style="background:var(--strat)"></i>⟪策略|Strategy⟫</span>
+      <span class="static"><i style="height:0;background:none;border-top:2px dashed var(--strat);opacity:.6"></i>⟪分批版（警戒先賣 1/3）|Batch (sell 1/3 on alert)⟫</span>
       <span class="static"><i style="background:var(--price)"></i>⟪持續持有|Buy &amp; hold⟫</span>
+      <span class="static"><i style="height:10px;background:color-mix(in srgb,var(--topline) 35%,transparent);border-left:2px dashed var(--topline)"></i>⟪警戒期間|Alert period⟫</span>
       <span class="static"><i class="dash" style="border-top-color:var(--s-sig)"></i>⟪賣出|Sell⟫</span>
       <span class="static"><i class="dash" style="border-top-color:var(--s-bot)"></i>⟪買回|Buy⟫</span>
     </div>
-    <p class="muted small" style="margin:8px 0 0">⟪對數刻度，起點 = 1。|Log scale; start = 1.⟫</p>
+    <p class="muted small" style="margin:8px 0 0">⟪對數刻度，起點 = 1。紫色色帶為警戒期間（進入警戒 → 賣出），淡色虛線為分批版。|Log scale; start = 1. Purple bands mark alert periods (alert → sale); the faint dashed line is the batch version.⟫</p>
   </div>
   <div class="grid st-bottom">{perf}{trades}</div>
   {limits}"""
@@ -895,7 +911,8 @@ def render_page(latest: dict, hist: pd.DataFrame, ind: pd.DataFrame, path: Path,
         "__STRATEGY__": _strategy(latest),
         "__STRAT_TRADES__": json.dumps({**{k: [t["date"] for t in latest.get("strategy", {}).get("trades", []) if t["action"] == k] for k in ("sell", "buy")},
                                         # 各起點 1 月 1 日的精確基準（圖表資料一年前為每週一點）
-                                        "base": {y: [float(hist.loc[f"{y}-01-01", "strat_eq"]), float(hist.loc[f"{y}-01-01", "strat_bh"])]
+                                        "alerts": latest.get("strategy", {}).get("alerts", []),
+                                        "base": {y: [float(hist.loc[f"{y}-01-01", c]) for c in ("strat_eq", "strat_bh", "strat_eq_b")]
                                                  for y in ("2014", "2018", "2022")} if "strat_eq" in hist else {}}),
         "__MID_EVENTS__": json.dumps({k: [str(d.date()) for d in _mid_events(hist["mid_" + k + "_signal"] > 0)]
                                       for k in ("dip", "hot")} if "mid_dip_signal" in hist else {"dip": [], "hot": []}),
@@ -1413,7 +1430,7 @@ body{overflow-x:clip}
   transition:transform .65s cubic-bezier(.65,0,.25,1),box-shadow .8s}
 .sw-thumb::after{content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);animation:shine 5.5s ease-in-out infinite}
 @keyframes shine{0%,70%{left:-60%}100%{left:130%}}
-body.mode-bottom .sw-thumb{transform:translateX(100%)}
+body:not(.mode-bottom) .sw-thumb{transform:translateX(100%)}  /* 底部訊號在左（預設）、頂部訊號在右 */
 .tools{display:flex;align-items:center;gap:2px;padding-left:14px;border-left:1px solid var(--line2)}
 .topbar .tools .iconbtn{width:34px;height:34px;margin:0;border:0;border-radius:10px;background:transparent;color:var(--mut);transition:color .2s,background .2s}
 .topbar .tools .iconbtn:hover{color:var(--fg);background:color-mix(in srgb,var(--fg) 8%,transparent)}
@@ -1631,6 +1648,15 @@ table.data.fit.st-trades td:last-child{white-space:normal;overflow:visible;line-
 .st-last-m{font-size:13px;color:var(--mut)}.st-last-m b.pos{color:var(--s-bot)}.st-last-m b.neg{color:var(--s-sig)}
 .st-trades tr.last td{background:color-mix(in srgb,var(--a1) 10%,transparent)}
 .st-trades .new{font:700 10px var(--mono);color:#111;background:var(--a1);padding:1px 6px;border-radius:5px;margin-left:6px;vertical-align:1px}
+
+.st-left{display:flex;flex-direction:column;gap:10px;min-width:0}
+.st-alert{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;font-size:13px;color:var(--mut);padding:6px 12px;border-radius:999px;border:1px solid var(--line2);background:var(--surface2)}
+.st-alert i{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+.st-alert.on{color:var(--fg);font-weight:600;border-color:color-mix(in srgb,var(--topline) 60%,transparent);background:color-mix(in srgb,var(--topline) 16%,transparent)}
+.st-alert.on i{background:var(--topline);box-shadow:0 0 0 0 var(--topline);animation:pulse 1.8s infinite}
+.st-pos-b{opacity:.75}
+.st-bt{color:var(--mut)}
+.tip-al{color:var(--topline);font-weight:700}
 </style>
 </head>
 <body>
@@ -1641,8 +1667,8 @@ __TICKER__
   <a class="brand" href="#overview" aria-label="__BRAND__ ⟪首頁|home⟫">__LOGO__<div class="brand-txt"><h1><span class="wordmark">__BRAND__</span>__BADGE__</h1><div class="sub">__BRAND_ZH__ · $__PRICE__ · __PRICE_DATE__</div></div></a>
   <nav class="tabs tabs-top" aria-label="⟪分頁|Tabs⟫">__TABS__<i class="tab-ind" aria-hidden="true"></i></nav>
   <div class="sw" role="tablist" aria-label="⟪訊號類型|Signal type⟫"><i class="sw-thumb" aria-hidden="true"></i>
-    <a href="#overview" data-mode="top" id="mode-top" role="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17L11 11l3 3 5-6"/><path d="M14 8h5v5"/></svg><span>⟪頂部訊號|Top signal⟫</span><em>__SIG2__</em></a>
     <a href="#b/overview" data-mode="bottom" id="mode-bottom" role="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7l6 6 3-3 5 6"/><path d="M14 16h5v-5"/></svg><span>⟪底部訊號|Bottom signal⟫</span><em>__BSIG2__</em></a>
+    <a href="#overview" data-mode="top" id="mode-top" role="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17L11 11l3 3 5-6"/><path d="M14 8h5v5"/></svg><span>⟪頂部訊號|Top signal⟫</span><em>__SIG2__</em></a>
   </div>
   <div class="tools">
     <a class="iconbtn lang" id="lang" href="__LANG_HREF__" title="__LANG_TITLE__" aria-label="__LANG_TITLE__">__LANG_LABEL__</a>
@@ -1803,6 +1829,8 @@ function chart(el,i0,series,o){
   const rv=o.reveal==null?1:o.reveal,cw=L+(W-L-R)*rv;
   if(rv<1)g+=`<clipPath id="cp-${el.id}"><rect x="0" y="0" width="${cw}" height="${H}"/></clipPath>`;
   g+=rv<1?`<g clip-path="url(#cp-${el.id})">`:'<g>';
+  (o.bands||[]).forEach(b=>{let s0=D.d.findIndex(v=>v>=b.from)-i0,e=b.to?D.d.findIndex(v=>v>=b.to)-i0:n-1;if(e<0||e>n-1)e=n-1;s0=Math.max(0,s0);if(e<=s0)return;
+    g+=`<rect x="${x(s0)}" y="${T}" width="${Math.max(1,x(e)-x(s0))}" height="${H-T-B}" fill="${css(b.c)}" opacity="${b.op||.1}"/>`;});
   let y2=null;
   if(o.bg){/* 背景價格層：獨立的對數刻度，佔滿圖高，刻度標在右側 */
     const pv=o.bg.a.slice(i0).filter(z=>z!=null&&z>0).map(Math.log10),plo=Math.min(...pv),phi=Math.max(...pv),pad=(phi-plo)*.04;
@@ -1815,7 +1843,7 @@ function chart(el,i0,series,o){
     for(let yr=y0+1;yr<=y1;yr+=s){const i=D.d.findIndex(v=>v>=yr+'-01-01')-i0;if(i>0)g+=`<text x="${x(i)}" y="${H-6}" font-size="11" text-anchor="middle" fill="${mut}">${yr}</text>`;}}
   series.forEach(s=>{if(s.hide)return;let d='',pen=false;s.a.slice(i0).forEach((v,i)=>{if(v==null||(o.log&&v<=0)){pen=false;return;}d+=(pen?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1);pen=true;});
     if(s.fill&&d){const first=s.a.slice(i0).findIndex(v=>v!=null);g+=`<path d="${d}L${x(n-1)},${H-B}L${x(first)},${H-B}Z" fill="${css(s.c)}" opacity=".08"/>`;}
-    g+=`<path d="${d}" fill="none" stroke="${css(s.c)}" stroke-width="${s.w||2}" stroke-linejoin="round" stroke-linecap="round"${s.dash?` stroke-dasharray="${s.dash}"`:''}${s.glow?` filter="url(#gl-${el.id})"`:''}/>`;});
+    g+=`<path d="${d}" fill="none" stroke="${css(s.c)}" stroke-width="${s.w||2}" stroke-linejoin="round" stroke-linecap="round"${s.dash?` stroke-dasharray="${s.dash}"`:''}${s.op?` opacity="${s.op}"`:''}${s.glow?` filter="url(#gl-${el.id})"`:''}/>`;});
   g+='</g>';
   if(rv<1)g+=`<line class="scan" x1="${cw}" x2="${cw}" y1="${T}" y2="${H-B}" stroke="${cssb('--a1')}" stroke-width="2" filter="url(#gl-${el.id})"/>`;
   const h=o.hover;if(h!=null&&h<n){g+=`<line x1="${x(h)}" x2="${x(h)}" y1="${T}" y2="${H-B}" stroke="${css('--fg')}" opacity=".3"/>`;
@@ -1842,12 +1870,14 @@ function drawMid(){const el=$('#c-mid');if(!el||!D.ma200)return;const s=st.mid,i
   const j=i0+(s.hover==null?D.d.length-1-i0:s.hover),m=v=>v==null?'—':'$'+Math.round(v).toLocaleString();
   $('#tip-mid').innerHTML=`<b>${D.d[j]}</b><span>${m(D.p[j])}</span><span>Supertrend <b>${D.std[j]==null?'—':(D.std[j]>0?'⟪多|Up⟫ ':'⟪空|Down⟫ ')+m(D.stl[j])}</b></span><span>⟪200 日|200D⟫ <b>${m(D.ma200[j])}</b></span><span>⟪20 週|20W⟫ <b>${m(D.ma20w[j])}</b></span><span>⟪50 日|50D⟫ <b>${m(D.ma50[j])}</b></span>`;}
 function drawStrat(){const el=$('#c-strat');if(!el||!D.seq)return;const s=st.strat;el.setAttribute('height',chartH(300,.55));
-  const i0=Math.max(0,D.d.findIndex(x=>x>=s.years+'-01-01')),bs=(STR.base||{})[s.years]||[D.seq[i0],D.sbh[i0]],b1=bs[0],b2=bs[1],since=D.d[i0];
-  const a=D.seq.map((v,i)=>i<i0||v==null?null:v/b1),b=D.sbh.map((v,i)=>i<i0||v==null?null:v/b2);
-  chart(el,i0,[{a:b,c:'--price',w:1.6},{a:a,c:'--strat',w:2.6,glow:true}],{log:true,axis:true,hover:s.hover,
-    marks:[{d:STR.sell.filter(x=>x>=since),c:'--s-sig',dash:'2 4',op:.85},{d:STR.buy.filter(x=>x>=since),c:'--s-bot',dash:'2 4',op:.85}]});
+  const i0=Math.max(0,D.d.findIndex(x=>x>=s.years+'-01-01')),bs=(STR.base||{})[s.years]||[D.seq[i0],D.sbh[i0],D.seqb&&D.seqb[i0]],b1=bs[0],b2=bs[1],b3=bs[2],since=D.d[i0];
+  const a=D.seq.map((v,i)=>i<i0||v==null?null:v/b1),b=D.sbh.map((v,i)=>i<i0||v==null?null:v/b2),c=(D.seqb||[]).map((v,i)=>i<i0||v==null?null:v/b3);
+  const al=(STR.alerts||[]).filter(x=>!x.to||x.to>=since);
+  chart(el,i0,[{a:b,c:'--price',w:1.6},{a:c,c:'--strat',w:1.5,dash:'5 5',op:.55},{a:a,c:'--strat',w:2.6,glow:true}],{log:true,axis:true,hover:s.hover,
+    bands:al.map(x=>({from:x.from<since?since:x.from,to:x.to,c:'--topline',op:.14})),
+    marks:[{d:al.map(x=>x.from).filter(x=>x>=since),c:'--topline',dash:'5 3',op:.9},{d:STR.sell.filter(x=>x>=since),c:'--s-sig',dash:'2 4',op:.85},{d:STR.buy.filter(x=>x>=since),c:'--s-bot',dash:'2 4',op:.85}]});
   const j=i0+(s.hover==null?D.d.length-1-i0:s.hover),f=v=>v==null?'—':(v>=100?Math.round(v).toLocaleString():v.toFixed(2))+'×';
-  $('#tip-strat').innerHTML=`<b>${D.d[j]}</b><span>⟪策略|Strategy⟫ <b>${f(a[j])}</b></span><span>⟪持有|Hold⟫ <b>${f(b[j])}</b></span><span>${D.p[j]==null?'':'$'+Math.round(D.p[j]).toLocaleString()}</span>`;}
+  $('#tip-strat').innerHTML=`<b>${D.d[j]}</b><span>⟪策略|Strategy⟫ <b>${f(a[j])}</b></span><span>⟪分批版|Batch⟫ <b>${f(c[j])}</b></span><span>⟪持有|Hold⟫ <b>${f(b[j])}</b></span>${al.some(x=>D.d[j]>=x.from&&(!x.to||D.d[j]<=x.to))?'<span class="tip-al">⟪警戒中|On alert⟫</span>':''}<span>${D.p[j]==null?'':'$'+Math.round(D.p[j]).toLocaleString()}</span>`;}
 function drawInd(){const s=st.ind,k=s.k;if(!k)return;const i0=i0of(s.years),v=D['v_'+k],sc=D['s_'+k],m=IND[k];
   chart($('#c-val'),i0,[{a:v,c:'--s-heat',w:1.8}],{hover:s.hover});
   if(sc)chart($('#c-sc'),i0,[{a:sc,c:k.startsWith('cold_')?'--s-cold':'--s-sig',w:1.8,fill:true}],{min:0,max:120,ticks:[0,40,80,120],axis:true,hover:s.hover});
@@ -1948,7 +1978,8 @@ function animMain(){cancelAnimationFrame(animMain.id);if(RM){st.main.p=1;drawMai
 const VIEWS=['overview','timing','heat','data','mid','strat'];
 const MODE_HIDE={top:['bsig','cold'],bottom:['sig','heat','tim']};
 function applyMode(m){if(st.modeApplied===m)return;st.modeApplied=m;st.main.hide=new Set(MODE_HIDE[m]);$$('#legend-main button').forEach(b=>b.classList.toggle('off',st.main.hide.has(b.dataset.s)));}
-function parseHash(){let p=(location.hash.slice(1)||'overview').split('/'),mode='top';
+/* 預設（沒有網址錨點）顯示底部訊號：現階段仍在驗證本輪底部；頂部模式的網址沒有前綴 */
+function parseHash(){let p=(location.hash.slice(1)||'b/overview').split('/'),mode='top';
   if(p[0]==='b'){mode='bottom';p.shift();}
   if(p[0]==='overview'&&p[1]==='bottom'){mode='bottom';p=['overview'];}   /* 相容舊網址 */
   let v=p[0]||'overview';if(!VIEWS.includes(v))v='overview';return {mode,v,sub:p[1]};}
@@ -1957,6 +1988,7 @@ function route(){const {mode,v,sub}=parseHash();st.mode=mode;
   $$('.view').forEach(e=>e.classList.toggle('on',e.dataset.view===v));
   $$('.tab').forEach(e=>{e.classList.toggle('on',e.dataset.tab===v);e.setAttribute('href','#'+(mode==='bottom'?'b/':'')+e.dataset.tab);});
   $('#mode-top').setAttribute('href','#'+v);$('#mode-bottom').setAttribute('href','#b/'+v);
+  $('.brand').setAttribute('href','#'+(mode==='bottom'?'b/':'')+'overview');
   $$('.sw a').forEach(e=>{e.classList.toggle('on',e.dataset.mode===mode);e.setAttribute('aria-selected',e.dataset.mode===mode);});
   applyMode(mode);moveInd();
   if(v==='overview'){requestAnimationFrame(heroShow);$$('.hero2 .kpi2 b').forEach(b=>{if(b.offsetParent)countUp(b,1400);});

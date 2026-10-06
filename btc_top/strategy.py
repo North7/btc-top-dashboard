@@ -16,6 +16,7 @@ import pandas as pd
 from btc_top import scoring as S
 
 ARM_SIG, ARM_TIM, BUY_BSIG = 50, 50, 50
+BATCH_KEEP = 2 / 3  # 分批版（對照用）：進入警戒時先賣 1/3，週線 Supertrend 轉空再賣完
 FEE = 0.001
 START = "2014-01-01"
 STARTS = ["2014-01-01", "2016-01-01", "2018-01-01", "2020-01-01", "2022-01-01"]
@@ -53,8 +54,8 @@ def walk_forward(ind: pd.DataFrame, live: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def positions(sig, tim, bsig, st):
-    """逐日狀態機。回傳 (持倉 0/1, 交易列表, 每日是否警戒)。"""
+def positions(sig, tim, bsig, st, keep_on_alert: float = 1.0):
+    """逐日狀態機。回傳 (持倉, 交易列表, 每日是否警戒)。keep_on_alert < 1 為分批版：進入警戒時先降到此倉位。"""
     pos, armed_s, trades = [], [], []
     s, armed, prev = 1.0, False, np.nan
     for d in sig.index:
@@ -63,6 +64,7 @@ def positions(sig, tim, bsig, st):
         if s > 0 and ((a >= ARM_SIG) or (tm >= ARM_TIM)):
             if not armed:
                 trades.append({"date": d, "action": "arm", "why": "sig" if a >= ARM_SIG else "tim"})
+                s = min(s, keep_on_alert)
             armed = True
         if s > 0 and armed and t < 0 and prev > 0:
             s, armed, why = 0.0, False, "st_down"
@@ -98,6 +100,18 @@ def compute_strategy(ind: pd.DataFrame, live: pd.DataFrame, st: pd.Series, today
     pos, trades, armed = positions(wf["sig"], wf["tim"], wf["bsig"], st)
     m, eq, bh = backtest(price, pos, START)
     stats = [backtest(price, pos, s)[0] for s in STARTS]
+    pos_b, _, _ = positions(wf["sig"], wf["tim"], wf["bsig"], st, BATCH_KEEP)
+    mb, eqb, _ = backtest(price, pos_b, START)
+    stats_b = [backtest(price, pos_b, s)[0] for s in STARTS]
+    # 警戒期間：進入警戒 → 賣出（尚未賣出則到今天）
+    alerts, cur = [], None
+    for t in trades:
+        if t["action"] == "arm":
+            cur = {"from": str(t["date"].date()), "to": None, "why": t["why"]}
+            alerts.append(cur)
+        elif t["action"] == "sell" and cur is not None:
+            cur["to"], cur = str(t["date"].date()), None
+    alerts = [x for x in alerts if x["to"] is None or x["to"] >= START]  # 2014 以前開始、之後才賣出的警戒也保留
 
     # 交易紀錄（含每次「賣出 → 買回」與「買回 → 賣出」的價格變化）
     tl = [t for t in trades if t["date"] >= pd.Timestamp(START)]
@@ -123,9 +137,10 @@ def compute_strategy(ind: pd.DataFrame, live: pd.DataFrame, st: pd.Series, today
         "now": {"top_signal": _r(live["sig"].iloc[-1], 1), "top_timing": _r(live["tim"].iloc[-1], 1),
                 "bottom_signal": _r(live["bsig"].iloc[-1], 1),
                 "supertrend": "up" if st.iloc[-1] > 0 else "down"},
-        "backtest": m, "by_start": stats, "trades": rows,
+        "backtest": m, "by_start": stats, "trades": rows, "alerts": alerts,
+        "batch": {"keep_on_alert": _r(BATCH_KEEP), "position": _r(pos_b.iloc[-1]), "backtest": mb, "by_start": stats_b},
     }
-    df = pd.DataFrame({"strat_eq": eq, "strat_bh": bh, "strat_pos": pos.reindex(eq.index)})
+    df = pd.DataFrame({"strat_eq": eq, "strat_bh": bh, "strat_eq_b": eqb, "strat_pos": pos.reindex(eq.index)})
     return df, info
 
 

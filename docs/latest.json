@@ -1,12 +1,12 @@
 {
   "date": "2026-10-06",
-  "generated_at": "2026-10-06T05:09:09Z",
+  "generated_at": "2026-10-06T05:18:27Z",
   "price_usd": 85834.53,
   "price_date": "2026-10-05",
   "top_signal": 0.0,
   "signal_level": "none",
-  "heat_score": 44.9,
-  "composite_score": 44.9,
+  "heat_score": 44.8,
+  "composite_score": 44.8,
   "timing_score": 0.0,
   "hot_categories": 0,
   "zone": "warm",
@@ -540,6 +540,105 @@
         "next_price_change": null
       }
     ],
+    "alerts": [
+      {
+        "from": "2013-10-22",
+        "to": "2014-03-03",
+        "why": "sig"
+      },
+      {
+        "from": "2016-10-25",
+        "to": "2018-02-05",
+        "why": "tim"
+      },
+      {
+        "from": "2021-01-07",
+        "to": "2021-05-24",
+        "why": "tim"
+      },
+      {
+        "from": "2021-10-12",
+        "to": "2022-01-10",
+        "why": "tim"
+      },
+      {
+        "from": "2025-01-21",
+        "to": "2025-11-17",
+        "why": "tim"
+      }
+    ],
+    "batch": {
+      "keep_on_alert": 0.6667,
+      "position": 1.0,
+      "backtest": {
+        "start": "2014",
+        "strategy": 575.67,
+        "hold": 114.08,
+        "ratio": 5.05,
+        "cagr": 0.6457,
+        "cagr_hold": 0.4496,
+        "max_dd": -0.6247,
+        "max_dd_hold": -0.8378,
+        "time_in": 0.6486
+      },
+      "by_start": [
+        {
+          "start": "2014",
+          "strategy": 575.67,
+          "hold": 114.08,
+          "ratio": 5.05,
+          "cagr": 0.6457,
+          "cagr_hold": 0.4496,
+          "max_dd": -0.6247,
+          "max_dd_hold": -0.8378,
+          "time_in": 0.6486
+        },
+        {
+          "start": "2016",
+          "strategy": 409.72,
+          "hold": 197.47,
+          "ratio": 2.07,
+          "cagr": 0.749,
+          "cagr_hold": 0.6343,
+          "max_dd": -0.6247,
+          "max_dd_hold": -0.8378,
+          "time_in": 0.7149
+        },
+        {
+          "start": "2018",
+          "strategy": 32.77,
+          "hold": 6.37,
+          "ratio": 5.14,
+          "cagr": 0.4895,
+          "cagr_hold": 0.2355,
+          "max_dd": -0.6145,
+          "max_dd_hold": -0.8138,
+          "time_in": 0.6949
+        },
+        {
+          "start": "2020",
+          "strategy": 30.38,
+          "hold": 11.97,
+          "ratio": 2.54,
+          "cagr": 0.6571,
+          "cagr_hold": 0.4437,
+          "max_dd": -0.5429,
+          "max_dd_hold": -0.7667,
+          "time_in": 0.726
+        },
+        {
+          "start": "2022",
+          "strategy": 6.14,
+          "hold": 1.8,
+          "ratio": 3.4,
+          "cagr": 0.4644,
+          "cagr_hold": 0.1321,
+          "max_dd": -0.3549,
+          "max_dd_hold": -0.6687,
+          "time_in": 0.7332
+        }
+      ]
+    },
     "projected_arm": "2029-02-01"
   },
   "categories": {
@@ -712,9 +811,9 @@
           "unit": "%",
           "role": "score",
           "description": "Coinbase 美元價格相對 OKX USDT 價格的溢價，反映美國買盤強度。",
-          "value": -0.0319,
+          "value": -0.0276,
           "score": 0.0,
-          "percentile": 27.7,
+          "percentile": 29.9,
           "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
@@ -727,7 +826,7 @@
     "leverage": {
       "label": "槓桿與衍生品",
       "weight": 0.15,
-      "score": 5.3,
+      "score": 5.1,
       "status": "ok",
       "stale": false,
       "indicators": {
@@ -750,7 +849,7 @@
           "unit": "%",
           "role": "score",
           "description": "全市場 BTC 合約未平倉量占市值比例，代表槓桿規模。",
-          "value": 0.1858,
+          "value": 0.1859,
           "score": 0.0,
           "percentile": 17.5,
           "as_of": "2026-10-05",
@@ -764,9 +863,9 @@
           "unit": "%",
           "role": "score",
           "description": "季度期貨相對現貨的年化溢價。越高代表期貨買方越願意付溢價。",
-          "value": 5.0191,
-          "score": 16.0,
-          "percentile": 45.4,
+          "value": 4.9955,
+          "score": 15.2,
+          "percentile": 44.9,
           "as_of": "2026-10-06",
           "stale": false,
           "status": "ok",
