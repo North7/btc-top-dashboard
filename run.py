@@ -373,6 +373,10 @@ def main():
     latest["events"] = detect_events(old, latest)
     (DOCS / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2))
     render_page(latest, hist, ind, DOCS / "index.html", defs, lang="zh")
+    try:  # 簡體版失敗（例如轉換套件出問題）不可讓整個流程失敗，沿用前一版
+        render_page(latest, hist, ind, DOCS / "zh-hans" / "index.html", defs, lang="hans")
+    except Exception as e:  # noqa: BLE001
+        print(f"[warn] 簡體版產生失敗，沿用前一版：{e}")
     render_page(latest, hist, ind, DOCS / "en" / "index.html", defs, lang="en")
     (DOCS / ".nojekyll").touch()
     try:  # 分享預覽圖：失敗不影響主流程

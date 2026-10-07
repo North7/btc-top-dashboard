@@ -464,8 +464,87 @@ def _midterm(latest: dict) -> str:
 週線 Supertrend（ATR 10 × 3，以 Bitstamp 日 K 計算、只用已收完的週 K）約一年翻轉一次、很少來回，但屬確認型，翻空時通常已離高點數週。門檻採常見慣例值、未針對歷史最佳化。僅供參考，不構成投資建議。|
 Built from an October 2026 indicator study: 48 indicators, observed on 2014–2019 and tested on 2020–2026. Single overheating readings (RSI, distance from moving averages, greed) were on average followed by further gains, and combined overheating had mixed outcomes — neither is a reliable sell signal; the bull-market dip watch shows no reliable difference from ordinary bull-market days (after 2020 its triggers did worse; the earlier edge came mostly from two 2017 cases) — a state reference only.
 The weekly Supertrend (ATR 10 × 3, from Bitstamp daily candles, completed weeks only) flips about once a year with few whipsaws, but it confirms rather than predicts — by the time it turns down, price is usually weeks past the high. Thresholds are conventional values, not fitted to history. For reference only — not investment advice.⟫</p>
+    {_refs()}
   </div>"""
 
+
+# 外部參考（2026-10 加入）：沒有免費、可公開再散布的完整歷史，所以不計分；只放連結與本站自己寫的說明，不轉貼對方圖表或數值
+REF_STATUS = {"unverified": "⟪無法驗證|Not verifiable⟫", "rejected": "⟪已實測・未採用|Tested · not adopted⟫", "watch": "⟪僅供觀察|Watch only⟫"}
+REF_ACCESS = {"free": "⟪免費可看|Free to view⟫", "partial": "⟪部分免費|Partly free⟫", "paid": "⟪需付費|Paid⟫"}
+REFS = [
+    ("⟪持有者行為|Holder behavior⟫", "⟪長期／短期持有者的成本與盈虧。免費資料最多只有近 4 年，無法跨週期驗證。|Cost basis and profit/loss of long- and short-term holders. Free data covers about 4 years at most, too short to test across cycles.⟫", [
+        ("⟪短期持有者成本價・STH-MVRV|STH cost basis · STH-MVRV⟫", "unverified", "free",
+         [("CheckOnChain", "https://charts.checkonchain.com/btconchain/unrealised/mvrv_sth/mvrv_sth_light.html"),
+          ("BGeometrics", "https://charts.bgeometrics.com/sth_realized_price.html")],
+         "⟪短期持有者（持幣 155 天內）的平均買入價。價格在它之上代表近期買家整體獲利，牛市回調常在這附近止跌；跌破代表近期買家整體虧損。STH-MVRV ＝ 價格 ÷ 這條成本線，STH-NUPL ＝ 1 − 1 ÷ STH-MVRV（小於 0 即跌破成本）。|The average purchase price of short-term holders (coins held under 155 days). Above it, recent buyers are in profit and bull-market pullbacks often stall nearby; below it, they are underwater. STH-MVRV = price ÷ this cost basis, and STH-NUPL = 1 − 1 ÷ STH-MVRV (below 0 means below cost).⟫",
+         "⟪「牛市中跌破＝好買點」要事後才知道是不是牛市；熊市裡會長期待在成本線下方。|“Below cost in a bull market = a good entry” only works if you already know it is a bull market; in bear markets price stays below this line for months.⟫"),
+        ("⟪依持有者分組的 NUPL|NUPL by cohort⟫", "unverified", "free",
+         [("CheckOnChain", "https://charts.checkonchain.com/btconchain/unrealised/nupl_bycohort/nupl_bycohort_light.html")],
+         "⟪把本站冷度用的 NUPL（全市場未實現盈虧）拆成長期與短期持有者。長期持有者的帳面獲利在週期頂部附近最大，在熊市底部縮到最小。|Splits the market-wide NUPL used in our coldness score into long- and short-term holders. Long-term holders’ paper profit peaks near cycle tops and shrinks to its smallest near bear-market bottoms.⟫",
+         "⟪和本站已計分的 NUPL、MVRV 高度相關，不是獨立的新證據。|Highly correlated with the NUPL and MVRV we already score — not independent evidence.⟫"),
+        ("⟪長期／短期持有者供給|Long- / short-term holder supply⟫", "unverified", "free",
+         [("CheckOnChain", "https://charts.checkonchain.com/btconchain/supply/breakdown_lthsth_1/breakdown_lthsth_1_light.html")],
+         "⟪長期持有者手上的幣在牛市後段減少（老幣賣給新買家），熊市中增加（重新累積）。|Coins held by long-term holders fall in the late bull market (old coins sold to new buyers) and rise during bear markets (re-accumulation).⟫",
+         "⟪轉折通常要幾個月後才看得出來；變化也受 155 天的分界影響。|Turns usually become clear only months later, and the 155-day cutoff shapes the curve.⟫"),
+        ("LTH-SOPR", "unverified", "free",
+         [("CheckOnChain", "https://charts.checkonchain.com/btconchain/realised/lthsopr_indicator/lthsopr_indicator_light.html")],
+         "⟪長期持有者賣出時的獲利倍數。頂部附近大量獲利了結時明顯升高；熊市後段跌破 1（長期持有者認賠賣出）常接近底部。|The profit multiple at which long-term holders sell. It jumps when they take heavy profits near tops; dropping below 1 late in a bear market (long-term holders selling at a loss) has tended to come near bottoms.⟫",
+         "⟪我們用近 4 年的免費資料試算過，加入計分反而讓 2025 年頂部的訊號變差，所以未採用。|We tried it with about 4 years of free data; adding it made the 2025 top signal worse, so it was not adopted.⟫"),
+    ]),
+    ("⟪長週期估值|Long-cycle valuation⟫", "⟪計算需要完整的持幣時間分布，免費網站可以看圖，但沒有可公開使用的資料。|They need the full coin-age distribution: free sites show the charts, but the data cannot be republished.⟫", [
+        ("Reserve Risk", "unverified", "free",
+         [("Look Into Bitcoin", "https://www.lookintobitcoin.com/charts/reserve-risk/")],
+         "⟪價格相對長期持有者「不肯賣」的程度。數值低代表價格低、長期持有者信心高，歷史上多在週期低位；數值高接近週期頂部。|Price relative to how unwilling long-term holders are to sell. Low readings mean a low price with confident holders (historically early in the cycle); high readings have come near cycle tops.⟫",
+         "⟪頂部讀數逐輪下降，和本站的經典指標一樣不能用固定紅線。|Peak readings fall each cycle, so — like our classic indicators — a fixed red line doesn’t work.⟫"),
+        ("RHODL Ratio", "unverified", "free",
+         [("Look Into Bitcoin", "https://www.lookintobitcoin.com/charts/rhodl-ratio/"),
+          ("CheckOnChain", "https://charts.checkonchain.com/btconchain/supply/rhodl/rhodl_light.html")],
+         "⟪比較 1 週內與 1–2 年的幣的實現價值。新資金大量湧入時升高，接近週期頂部。|Compares the realized value of coins moved within a week with coins held 1–2 years. It rises when new money floods in, near cycle tops.⟫",
+         "⟪同樣是逐輪遞減；與 MVRV 類指標高度相關。|Also declines cycle to cycle and correlates strongly with MVRV-type indicators.⟫"),
+    ]),
+    ("⟪資金動能|Capital momentum⟫", "⟪可以用本站已有的資料自己算，已實測。|We can compute this from data we already collect, and we tested it.⟫", [
+        ("⟪SSR 震盪指標|SSR Oscillator⟫", "rejected", "paid",
+         [("Glassnode", "https://studio.glassnode.com/charts/indicators.SsrOscillator?a=BTC")],
+         "⟪BTC 市值 ÷ 穩定幣總供給，再換算成相對 200 日均值的標準差倍數。常被解讀為「穩定幣買盤彈藥」多寡。|BTC market cap ÷ total stablecoin supply, expressed in standard deviations from its 200-day mean. Often read as how much stablecoin “dry powder” is available.⟫",
+         "⟪本站 2026-10 用相同算法實測（2019 年起）：與價格自身的 200 日偏離相關 0.77，主要反映價格動能；2021、2025 年週期頂部只有 0.9、0.2，2024-03 中段高點反而 2.8；≥ 2 之後 90 天中位數仍漲 26%。不是頂部或底部訊號。|We tested the same formula in October 2026 (from 2019): it correlates 0.77 with price’s own 200-day deviation, so it mostly reflects momentum; the 2021 and 2025 cycle tops read only 0.9 and 0.2 while the March 2024 mid-cycle high read 2.8; after readings ≥ 2 the median 90-day return was still +26%. Not a top or bottom signal.⟫"),
+    ]),
+    ("⟪短線結構|Short-term structure⟫", "⟪只反映幾天到幾週的槓桿與避險部位，與週期位置無關。|Reflects leverage and hedging over days to weeks — unrelated to the cycle position.⟫", [
+        ("⟪清算熱圖|Liquidation heatmap⟫", "watch", "partial",
+         [("CoinGlass", "https://www.coinglass.com/pro/futures/LiquidationHeatMap")],
+         "⟪估算槓桿部位會被強制平倉的價位。清算聚集的價位附近常有劇烈波動，價格有時會先掃過再反轉。|Estimates the price levels where leveraged positions would be force-closed. Price often swings hard around dense clusters, sometimes sweeping through them before reversing.⟫",
+         "⟪是模型估算，不是交易所公布的真實部位。|A model estimate, not actual positions published by exchanges.⟫"),
+        ("⟪選擇權未平倉與 Put／Call|Options open interest & put/call⟫", "watch", "free",
+         [("CoinGlass", "https://www.coinglass.com/options")],
+         "⟪看市場在哪些價位買了保護（Put）或押注上漲（Call），以及大型到期日。|Shows where the market has bought protection (puts) or upside bets (calls), and when large expiries land.⟫",
+         "⟪持倉可能是避險而非方向性押注，不能直接當成多空意見。|Positions may be hedges rather than directional bets, so they don’t map directly to sentiment.⟫"),
+    ]),
+]
+
+
+def _refs() -> str:
+    """中期狀態頁最下方的「外部參考」：連結（另開分頁）＋本站說明＋驗證狀態。"""
+    groups = []
+    for title, note, items in REFS:
+        cards = []
+        for name, status, access, links, how, limit in items:
+            a = "".join(f'<a href="{u}" target="_blank" rel="noopener noreferrer nofollow">{n}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>'
+                        for n, u in links)
+            cards.append(f'<div class="ref"><div class="ref-head"><h4>{name}</h4><span class="ref-tags"><i class="rs-{status}">{REF_STATUS[status]}</i>'
+                         f'<i class="ra-{access}">{REF_ACCESS[access]}</i></span></div>'
+                         f'<p>{how}</p><p class="ref-lim"><b>⟪限制|Caveat⟫</b>{limit}</p><div class="ref-links">{a}</div></div>')
+        groups.append(f'<div class="ref-group"><h3>{title}</h3><p class="muted small">{note}</p><div class="ref-grid">{"".join(cards)}</div></div>')
+    return (f'<div class="card refs" id="refs"><div class="card-head"><div><div class="eyebrow">EXTERNAL</div><h3>⟪外部參考：值得看、但不計分的數據|External references: worth a look, not scored⟫</h3></div></div>'
+            f'<p class="refs-intro">⟪這些數據沒有免費、可公開使用的完整歷史，所以本站不納入計分，也無法像其他指標一樣用過去的頂部與底部驗證。'
+            f'連結會另開原網站；說明由本站撰寫，與來源網站無關，也不轉載對方的圖表或數值。|'
+            f'These datasets have no free, republishable full history, so we don’t score them and can’t validate them against past tops and bottoms like our other indicators. '
+            f'Links open the original sites in a new tab; the notes are ours, unaffiliated with those sites, and we don’t reproduce their charts or figures.⟫</p>'
+            f'{"".join(groups)}</div>')
+
+
+HOLDER_NOTE = ('<p class="holder-note">⟪<b>持有者行為</b>（長期／短期持有者的成本、盈虧、供給）沒有免費、可公開的完整歷史，所以不計分。'
+               '想看這類數據，可到 <a href="#mid/refs">中期狀態 › 外部參考</a>。|'
+               '<b>Holder behavior</b> (long- and short-term holders’ cost basis, profit/loss and supply) has no free, republishable full history, so it isn’t scored. '
+               'For these charts, see <a href="#mid/refs">Market state › External references</a>.⟫</p>')
 
 WHY = {"st_down": "⟪週線 ST 轉空|Weekly ST down⟫", "st_up": "⟪週線 ST 轉多|Weekly ST up⟫",
        "bsig": "⟪底部訊號 ≥ 50|Bottom signal ≥ 50⟫"}
@@ -961,10 +1040,10 @@ def _recent_table(hist: pd.DataFrame, cats: dict) -> str:
 
 def render_page(latest: dict, hist: pd.DataFrame, ind: pd.DataFrame, path: Path,
                 defs: dict = INDICATORS, lang: str = "zh"):
-    """lang="zh" 輸出中文版；lang="en" 輸出英文版（放在 docs/en/，連結需多退一層）。"""
+    """lang="zh" 繁體中文（docs/）；"hans" 簡體中文（docs/zh-hans/，由繁體版轉換）；"en" 英文（docs/en/）。子資料夾的連結需多退一層。"""
     global _LANG
-    _LANG = lang
-    up = "../" if lang == "en" else ""
+    _LANG = "en" if lang == "en" else "zh"
+    up = "" if lang == "zh" else "../"
     t = latest["timing"]
     sig, lvl, heat, tim = latest["top_signal"], latest["signal_level"], latest["heat_score"], latest["timing_score"]
     shown = {k: c for k, c in latest["categories"].items() if c["status"] != "unavailable"}  # 無資料的類別不顯示
@@ -1118,10 +1197,12 @@ def render_page(latest: dict, hist: pd.DataFrame, ind: pd.DataFrame, path: Path,
         "__CSV_IND__": REPO + "/blob/main/data/indicators.csv",
         "__CSV_RAW__": REPO + "/tree/main/data/raw",
         "__JSON_HREF__": up + "latest.json",
-        "__LANG_HREF__": "../index.html" if lang == "en" else "en/index.html",
-        "__LANG_LABEL__": "中" if lang == "en" else "EN",
-        "__LANG_TITLE__": "切換為中文" if lang == "en" else "Switch to English",
+        "__LANG_MENU__": _lang_menu(lang, up),
+        "__LANG_LABEL__": LANG_LABEL[lang],
+        "__HERE__": lang,
+        "__ROOT__": up,
         "__EXTRA_SRC__": "",
+        "__HOLDER_NOTE__": HOLDER_NOTE,
         "__REPO__": REPO,
         "__GENERATED__": latest["generated_at"],
         "__TOPS__": json.dumps(latest["cycle_tops"]),
@@ -1135,8 +1216,44 @@ def render_page(latest: dict, hist: pd.DataFrame, ind: pd.DataFrame, path: Path,
         page = page.replace(k, _pick(v))
     if lang == "en":
         page = page.replace("\u3000", " ")  # 英文版不用全形空格
+    if lang == "hans":
+        page = to_hans(page)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(page, encoding="utf-8")
+
+
+# 語言：繁體（根目錄）、簡體（zh-hans/）、英文（en/）
+LANG_PATH = {"zh": "", "hans": "zh-hans/", "en": "en/"}
+LANG_LABEL = {"zh": "繁", "hans": "简", "en": "EN"}
+LANG_NAME = {"zh": ("zh-Hant", "繁體中文"), "hans": ("zh-Hans", "简体中文"), "en": ("en", "English")}
+
+
+def _lang_menu(lang: str, up: str) -> str:
+    cur = ' aria-current="true" class="on"'
+    return "".join(f'<a role="menuitem" href="{up}{LANG_PATH[k]}index.html" data-lang="{k}" lang="{code}" hreflang="{code}"'
+                   f'{cur if k == lang else ""}>{name}</a>'
+                   for k, (code, name) in LANG_NAME.items())
+
+
+# 繁轉簡：OpenCC「台灣用語 → 大陸用語」，只轉中文字段落（程式碼與數據不受影響）；再修正少數用語與引號
+_CC = None
+HANS_FIX = {"缺省": "默认", "指针": "指标", "仿真": "模拟", "拷贝": "复制", "页眉": "顶栏", "原代码": "源代码", "水准": "水平",
+            "「": "“", "」": "”", "『": "‘", "』": "’"}  # OpenCC 用語轉換中不適合本站語境的詞，與大陸常用引號
+_CJK_RUN = _re.compile(r"[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]+")
+
+
+def to_hans(html: str) -> str:
+    global _CC
+    if _CC is None:
+        from opencc import OpenCC
+        _CC = OpenCC("tw2sp")
+    keep = LANG_NAME["zh"][1]  # 語言選單裡的「繁體中文」保持原樣
+    html = html.replace(keep, "\x00KEEP\x00")
+    out = _CJK_RUN.sub(lambda m: _CC.convert(m.group(0)), html)
+    for a, b in HANS_FIX.items():
+        out = out.replace(a, b)
+    out = out.replace('<html lang="zh-Hant">', '<html lang="zh-Hans">')
+    return out.replace("\x00KEEP\x00", keep)
 
 
 ICONS = {
@@ -1184,9 +1301,13 @@ TEMPLATE = r"""<!doctype html>
 <script>/* 預設深色；使用者選過（dark／light／auto）就沿用 */
 var THEME0='dark';try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark'||t==='auto')THEME0=t;}catch(e){}
 if(THEME0!=='auto')document.documentElement.dataset.theme=THEME0;
-try{var L=localStorage.getItem('lang'),here='⟪zh|en⟫';
-  if(!L){L=/^zh/i.test(navigator.language||'')?'zh':'en';}
-  if(L!==here&&!/[?&]nolang/.test(location.search))location.replace((here==='zh'?'en/':'../')+(location.protocol==='file:'?'index.html':'')+location.hash);}catch(e){}</script>
+/* 語言：沒選過時依瀏覽器語言（簡體地區 → 簡體、其他中文 → 繁體、其他 → 英文）；選過就沿用 */
+var HERE='__HERE__',ROOT='__ROOT__',LP={zh:'',hans:'zh-hans/',en:'en/'};
+try{var L=localStorage.getItem('lang');
+  if(!LP.hasOwnProperty(L)){var n=(navigator.language||'').toLowerCase();L=/^zh-(cn|sg|my|hans)/.test(n)?'hans':/^zh/.test(n)?'zh':'en';}
+  if(L!==HERE&&!/[?&]nolang/.test(location.search))location.replace(ROOT+LP[L]+(location.protocol==='file:'?'index.html':'')+location.hash);}catch(e){}</script>
+<link rel="alternate" hreflang="zh-Hant" href="https://north7.github.io/tidemark/"><link rel="alternate" hreflang="zh-Hans" href="https://north7.github.io/tidemark/zh-hans/">
+<link rel="alternate" hreflang="en" href="https://north7.github.io/tidemark/en/"><link rel="alternate" hreflang="x-default" href="https://north7.github.io/tidemark/">
 <meta name="theme-color" content="#0b0d10" id="theme-color">
 <style>
 :root{color-scheme:light;--bg:#f3f4f6;--surface:#fff;--surface2:#f7f8fa;--line:rgba(15,23,42,.08);--line2:rgba(15,23,42,.14);
@@ -1233,6 +1354,13 @@ background:linear-gradient(90deg,var(--fg) 40%,color-mix(in srgb,var(--accent) 7
 .appbar-in .iconbtn+.iconbtn{margin-left:-4px}
 .iconbtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .iconbtn.lang{font-size:12.5px;font-weight:700;text-decoration:none;letter-spacing:.3px}
+.langbox{position:relative;display:inline-flex}
+.langmenu{position:absolute;top:calc(100% + 8px);right:0;z-index:60;min-width:140px;padding:6px;border-radius:14px;border:1px solid var(--line2);
+  background:linear-gradient(var(--surface),var(--surface)),var(--bg);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:2px}  /* 頁首的 --surface 是半透明，墊一層底色 */
+.langmenu[hidden]{display:none}
+.langmenu a{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border-radius:9px;font-size:14px;color:var(--fg);text-decoration:none;white-space:nowrap}
+.langmenu a:hover,.langmenu a:focus-visible{background:var(--surface2);outline:none}
+.langmenu a.on{font-weight:700}.langmenu a.on::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
 .iconbtn{width:36px;height:36px;border-radius:12px;border:1px solid var(--line2);background:var(--surface);color:var(--fg);font:600 15px/1 inherit;cursor:pointer;display:grid;place-items:center}
 .tabs{display:flex;gap:4px}
 .tab{display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--mut);font-size:14px;padding:7px 12px;border-radius:10px;transition:background .15s,color .15s}
@@ -1730,6 +1858,27 @@ main.wrap{padding-top:var(--hdr,96px)}
 .mid-stats{margin:auto 0 0;font-size:12.5px;color:var(--mut)}
 .mid-chart{margin-top:14px}
 .mid-note{margin:12px 2px 0;max-width:980px}
+/* 外部參考 */
+.refs{margin-top:16px}
+.refs-intro{color:var(--mut);font-size:14px;line-height:1.7;max-width:900px;margin:4px 0 6px}
+.ref-group{margin-top:22px}.ref-group>h3{font-size:15px;margin:0 0 2px}.ref-group>p{margin:0 0 10px;max-width:900px}
+.ref-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:12px}
+.ref{border:1px solid var(--line2);border-radius:14px;padding:14px 16px;background:var(--surface2);display:flex;flex-direction:column;gap:8px}
+.ref-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:6px 10px}
+.ref-head h4{margin:0;font-size:15px;line-height:1.35}
+.ref-tags{display:flex;flex-wrap:wrap;gap:4px}
+.ref-tags i{font-style:normal;font-size:12px;line-height:1;padding:5px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--mut);white-space:nowrap}
+.ref-tags .rs-rejected{color:var(--top-c);border-color:color-mix(in srgb,var(--top-c) 40%,transparent)}
+.ref-tags .rs-unverified{color:var(--warm);border-color:color-mix(in srgb,var(--warm) 40%,transparent)}
+.ref-tags .ra-paid{background:var(--line)}
+.ref p{margin:0;font-size:13.5px;line-height:1.65;color:var(--fg)}
+.ref .ref-lim{color:var(--mut)}.ref-lim b{font-weight:600;color:var(--fg);margin-right:6px}
+.ref-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:4px}
+.ref-links a{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--fg);text-decoration:none;padding:7px 11px;border-radius:10px;border:1px solid var(--line2);background:var(--surface)}
+.ref-links a:hover{border-color:var(--fg)}
+.ref-links svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.holder-note{margin:16px 2px 0;font-size:13.5px;line-height:1.7;color:var(--mut);max-width:900px}
+.holder-note a{color:var(--fg);font-weight:600}
 .sec-tag{font:600 11px var(--mono);letter-spacing:.12em;color:var(--mut);padding:8px 14px;border:1px dashed var(--line2);border-radius:999px;white-space:nowrap}
 @media (max-width:899px){.mid-check{grid-template-columns:minmax(0,1fr) auto 16px}.mid-check .t{display:none}}
 
@@ -1946,7 +2095,8 @@ __TICKER__
     <a href="#overview" data-mode="top" id="mode-top" role="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17L11 11l3 3 5-6"/><path d="M14 8h5v5"/></svg><span>⟪頂部訊號|Top signal⟫</span><em>__SIG2__</em></a>
   </div>
   <div class="tools">
-    <a class="iconbtn lang" id="lang" href="__LANG_HREF__" title="__LANG_TITLE__" aria-label="__LANG_TITLE__">__LANG_LABEL__</a>
+    <div class="langbox"><button class="iconbtn lang" id="lang" aria-haspopup="menu" aria-expanded="false" aria-controls="langmenu" title="⟪語言|Language⟫" aria-label="⟪語言|Language⟫">__LANG_LABEL__</button>
+      <div class="langmenu" id="langmenu" role="menu" hidden>__LANG_MENU__</div></div>
     <button class="iconbtn" id="theme" aria-label="⟪切換深淺色|Toggle theme⟫" title="⟪深淺色：深色|Theme: dark⟫"></button>
     <button class="iconbtn" id="share" aria-label="⟪分享|Share⟫" title="⟪分享|Share⟫"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button>
     <button class="iconbtn" id="help" aria-label="⟪怎麼看這個頁面|How to read this page⟫">?</button>
@@ -2007,10 +2157,12 @@ __TICKER__
   <div class="mode" data-mode="top">
   <div class="view-head"><div class="sec-n">03 — ⟪熱度|HEAT⟫</div><h2>⟪熱度|Heat⟫ <span class="__HEAT_BAND__">__HEAT__</span></h2><p>⟪__CATLIST____NCAT_TEXT__加權平均。週期法用過去頂部推估本輪預期頂部；百分位法超過 __PIVOT__% 才計分；單一指標加總上限 120。點任一指標看說明與歷史走勢。|Weighted average of __NCAT_TEXT__: __CATLIST__. The cycle method projects this cycle's expected top from past tops; percentile indicators only score above __PIVOT__%; each indicator is capped at 120. Tap any indicator for details and history.⟫</p></div>
   __CATS__
+  __HOLDER_NOTE__
   </div>
   <div class="mode" data-mode="bottom">
   <div class="view-head"><div class="sec-n">03 — ⟪冷度|COLDNESS⟫</div><h2>⟪冷度|Coldness⟫ <span class="cool-t">__COLD_SCORE__</span></h2><p>⟪估值、礦工、價格結構三組加權平均。冷度 100 代表達到本輪推估的底部水準，0 代表在中性以上。點任一指標看說明與歷史走勢。|Weighted average of three groups: valuation, miners and price structure. 100 means this cycle's projected bottom level; 0 means neutral or above. Tap any indicator for details and history.⟫</p></div>
   <div class="cold-groups">__COLD__</div>
+  __HOLDER_NOTE__
   </div>
 </section>
 
@@ -2198,16 +2350,22 @@ $$('[data-close]').forEach(e=>e.onclick=closeSheet);
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sheet').hidden)closeSheet();});
 $('#help').onclick=()=>openSheet($('#tpl-help').innerHTML);
 /* 分享：手機用系統分享選單（LINE、訊息等）；電腦複製連結。分享的是目前所在的分頁與模式 */
-$('#share').onclick=async()=>{const url='https://north7.github.io/tidemark/⟪|en/⟫'+location.hash,
+$('#share').onclick=async()=>{const url='https://north7.github.io/tidemark/'+LP[HERE]+location.hash,
   title='Tidemark · ⟪BTC 週期訊號|BTC Cycle Signals⟫',text=document.querySelector('meta[property="og:description"]').content;
   if(navigator.share&&matchMedia('(pointer:coarse)').matches){try{await navigator.share({title,text,url});}catch(e){}return;}
   try{await navigator.clipboard.writeText(url);toast('⟪已複製連結|Link copied⟫');}
   catch(e){prompt('⟪複製這個連結|Copy this link⟫',url);}};
 function toast(msg){let t=$('#toast');if(!t){t=document.createElement('div');t.id='toast';t.setAttribute('role','status');document.body.appendChild(t);}
   t.textContent=msg;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800);}
-$('#lang').onclick=e=>{e.preventDefault();try{localStorage.setItem('lang','⟪en|zh⟫');}catch(_){}
-  /* 本機直接開檔（file://）不會自動補 index.html，要寫完整路徑 */
-  location.href='⟪en/|../⟫'+(location.protocol==='file:'?'index.html':'')+location.hash;};
+/* 語言選單：繁體／簡體／英文，記住選擇並帶著目前分頁切換 */
+(()=>{const b=$('#lang'),m=$('#langmenu'),set=o=>{m.hidden=!o;b.setAttribute('aria-expanded',o);};
+  b.onclick=e=>{e.stopPropagation();set(m.hidden);if(!m.hidden)(m.querySelector('.on')||m.firstElementChild).focus();};
+  document.addEventListener('click',e=>{if(!m.hidden&&!e.target.closest('.langbox'))set(false);});
+  addEventListener('keydown',e=>{if(e.key==='Escape'&&!m.hidden){set(false);b.focus();}});
+  m.querySelectorAll('a').forEach(a=>a.onclick=e=>{e.preventDefault();const L=a.dataset.lang;try{localStorage.setItem('lang',L);}catch(_){}
+    if(L===HERE){set(false);return;}
+    /* 本機直接開檔（file://）不會自動補 index.html，要寫完整路徑 */
+    location.href=ROOT+LP[L]+(location.protocol==='file:'?'index.html':'')+location.hash;});})();
 const THEME_ICON={auto:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg>',
   light:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
   dark:'<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>'};
@@ -2319,8 +2477,8 @@ function parseHash(){let p=(location.hash.slice(1)||'b/overview').split('/'),mod
   if(p[0]==='b'){mode='bottom';p.shift();}
   if(p[0]==='overview'&&p[1]==='bottom'){mode='bottom';p=['overview'];}   /* 相容舊網址 */
   let v=p[0]||'overview';if(!VIEWS.includes(v))v='overview';return {mode,v,sub:p[1]};}
-/* 流量統計：每個分頁＋模式各算一個路徑，例如 /b/overview、/strat、/en/mid */
-function track(){const {mode,v}=parseHash(),side=v==='mid'||v==='strat',p=(location.pathname.includes('/en/')?'/en':'')+'/'+(mode==='bottom'&&!side?'b/':'')+v;
+/* 流量統計：每個分頁＋模式各算一個路徑，例如 /b/overview、/strat、/en/mid、/zh-hans/heat */
+function track(){const {mode,v}=parseHash(),side=v==='mid'||v==='strat',p=(HERE==='zh'?'':'/'+LP[HERE].slice(0,-1))+'/'+(mode==='bottom'&&!side?'b/':'')+v;
   if(track.last===p)return;track.last=p;const go=()=>{try{window.goatcounter&&goatcounter.count&&goatcounter.count({path:p,title:document.title});}catch(e){}};
   if(window.goatcounter&&goatcounter.count)go();else addEventListener('load',go,{once:true});}
 function route(){const {mode,v,sub}=parseHash();st.mode=mode;track();
@@ -2334,7 +2492,9 @@ function route(){const {mode,v,sub}=parseHash();st.mode=mode;track();
   if(v==='overview'){requestAnimationFrame(heroShow);$$('.hero2 .kpi2 b').forEach(b=>{if(b.offsetParent)countUp(b,1400);});
     st.main.played=false;if(!RM)st.main.p=0;
     requestAnimationFrame(()=>{const c=$('#sec-history'),r=c.getBoundingClientRect();if(r.top<innerHeight*.85&&r.bottom>0){st.main.played=true;animMain();}});}
-  if(sub){const el=document.getElementById((mode==='bottom'?'grp-':'cat-')+sub);if(el){el.open=true;setTimeout(()=>{const y=el.getBoundingClientRect().top+scrollY-hdr()-16;scrollTo({top:y,behavior:'smooth'});},30);}}else scrollTo(0,0);
+  if(sub){const el=document.getElementById((mode==='bottom'?'grp-':'cat-')+sub)||document.getElementById(sub);if(el){el.open=true;const go=b=>{const y=el.getBoundingClientRect().top+scrollY-hdr()-16;scrollTo({top:y,behavior:b});};setTimeout(()=>go('smooth'),30);
+    if(!route.ran)setTimeout(()=>go('auto'),600);}}else scrollTo(0,0);   /* 第一次載入時圖表稍後才撐開版面，再補捲一次 */
+  route.ran=true;
   redraw();}
 function redraw(){const {v}=parseHash();if(v==='overview')drawMain();if(v==='mid')drawMid();if(v==='strat'){drawStrat();drawFut();}if(st.ind.k)drawInd();}
 bind([$('#c-main')],'main',()=>i0of(st.main.years),drawMain);bind([$('#c-mid')],'mid',()=>i0of(st.mid.years),drawMid);(()=>{const el=$('#c-fut');if(!el)return;const mv=ev=>{const r=el.getBoundingClientRect(),cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left,L=+el.dataset.l,R=+el.dataset.r,[t0,t1]=el._x||[0,1];

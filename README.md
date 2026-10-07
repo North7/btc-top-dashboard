@@ -9,7 +9,8 @@
 
 - 儀表板：`https://north7.github.io/tidemark/`
 - 當日數據：`https://north7.github.io/tidemark/latest.json`
-- 英文版：`https://north7.github.io/tidemark/en/`（首次依瀏覽器語言自動選擇，右上角可切換）
+- 簡體中文版：`https://north7.github.io/tidemark/zh-hans/`；英文版：`https://north7.github.io/tidemark/en/`
+  （首次依瀏覽器語言自動選擇：簡體地區 → 簡體、其他中文 → 繁體、其他 → 英文；右上角語言選單可切換並記住）
 
 | 頁面 | 內容 |
 |---|---|
@@ -158,6 +159,8 @@ Pi Cycle Top（111 日均 ÷ 350 日均×2）經同樣方式測試：最近兩�
 - 中期底部：牛市中的超賣組合與一般牛市日沒有可靠差異。以中位數看檢驗期似乎較好（90 天 +14% vs +7%），但改看平均或固定出場規則回測，
   2020 年後 4 次觸發全部輸給「任意牛市日進場」，早期優勢主要來自 2017 年兩次主升段；只作狀態參考。熊市中的超賣不可靠。
 - 牛市波段（避開回調）：7 種趨勢濾網在三次牛市內全部輸給持有；回調加碼短線：4 種出場方式皆無可靠優勢。
+
+**外部參考**（中期狀態頁最下方，`page.py` 的 `REFS`）：沒有免費、可公開使用完整歷史的數據（短期持有者成本價與 STH-MVRV、依持有者分組的 NUPL、長短期持有者供給、LTH-SOPR、Reserve Risk、RHODL、SSR 震盪指標、清算熱圖、選擇權），只放原網站連結（另開分頁）與本站撰寫的說明、限制，並標示驗證狀態（無法驗證／已實測未採用／僅供觀察）與是否免費；不轉載對方的圖表或數值，也不納入計分。
 - Supertrend：週線一年約翻轉一次、30 天內很少來回，但屬確認型（翻空時距中期高點中位約 7 週、已跌約 35%）；日線每年翻轉 7–9 次、近半在 30 天內翻回，回測輸給持有。
 - 未能測試（無免費完整歷史）：長短期持有者成本、SOPR、Reserve Risk、RHODL、選擇權、清算；總經數據待測。
 門檻採常見慣例值、未針對歷史最佳化。頁面上的歷史統計（觸發次數、之後報酬）每天依最新數據重算。
@@ -232,7 +235,7 @@ Pi Cycle Top（111 日均 ÷ 350 日均×2）經同樣方式測試：最近兩�
 | 檔案 | 內容 |
 |---|---|
 | `docs/latest.json` | 頂部／底部訊號、熱度、時機、冷度、zone、各類別與指標、`bottom`（冷度組成、週期結構驗證）、`midterm`（中期狀態）、`strategy`（週期策略、定案後追蹤）、`scenarios`（三種情境）、`events`（當日重要事件）、`health`（資料警告）、stale / unavailable 標記 |
-| `docs/index.html`、`docs/en/index.html` | 中英文儀表板（靜態、資料內嵌；唯一的外部連線是匿名流量統計） |
+| `docs/index.html`、`docs/zh-hans/index.html`、`docs/en/index.html` | 繁體、簡體、英文儀表板（靜態、資料內嵌；唯一的外部連線是匿名流量統計）；簡體版由繁體版以 OpenCC 轉換 |
 | `docs/og.png` | 每日分享預覽圖（分享連結時顯示當日訊號） |
 | `data/scenario_snapshot.json` | 定案時凍結的情境路徑（不可覆寫） |
 | `data/raw/*.csv` | 各資料源原始歷史（每日合併更新） |
@@ -246,7 +249,7 @@ Pi Cycle Top（111 日均 ÷ 350 日均×2）經同樣方式測試：最近兩�
 - 外部定時服務（cron-job.org）每天 UTC 00:15 觸發 GitHub Actions 執行 `run.py`（GitHub 自身排程實測常延遲約 5 小時，
   因此只當備援：00:15、00:30、03:15，當天已更新就略過），完成後自動 commit `data/` 與 `docs/`。
 - 任一資料源失敗時沿用前一次的資料，並在 JSON 標記 `stale: true`，不讓整個流程失敗。
-- **自動檢查**（`python -m btc_top.checks`）：必要欄位、數值範圍、未替換的佔位符、英文頁殘留中文等。有錯誤就停止、不更新網站。
+- **自動檢查**（`python -m btc_top.checks`）：必要欄位、數值範圍、未替換的佔位符、英文頁殘留中文、簡體頁殘留繁體字等。有錯誤就停止、不更新網站。
 - **通知**（`btc_top/events.py`、`btc_top/notify.py`）：偵測訊號換級、策略警戒與買賣、週線 Supertrend 翻轉、週期結構判定、
   權杖到期提醒與更新失敗，透過 LINE 官方帳號 Messaging API 推播（金鑰放 GitHub Secrets：`LINE_CHANNEL_TOKEN`、`LINE_USER_ID`；未設定時只記錄不發送）。
 - GitHub Pages 從 main 分支的 `/docs` 發布。

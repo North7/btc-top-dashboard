@@ -39,7 +39,7 @@ def run_checks(docs: Path = DOCS) -> tuple[list[str], list[str]]:
             warnings.append(f"latest.json 沒有 {k} 區塊（該功能計算失敗）")
 
     # 頁面
-    for f, en in (("index.html", False), ("en/index.html", True)):
+    for f, kind in (("index.html", "zh"), ("zh-hans/index.html", "hans"), ("en/index.html", "en")):
         path = docs / f
         if not path.exists():
             errors.append(f"缺少 {f}")
@@ -52,12 +52,24 @@ def run_checks(docs: Path = DOCS) -> tuple[list[str], list[str]]:
             errors.append(f"{f} 有未替換的佔位符：{', '.join(left[:5])}")
         if "⟪" in s or "⟫" in s:
             errors.append(f"{f} 有未處理的雙語標記")
-        if en:
+        if kind != "zh":
             body = re.sub(r"<script.*?</script>|<style.*?</style>|<!--.*?-->", "", s, flags=re.S)
-            body = re.sub(r"<[^>]+>", " ", body).replace("中", "")  # 語言切換按鈕的「中」是刻意的
-            cjk = sorted(set(re.findall(r"[一-鿿]+", body)))
-            if cjk:
-                errors.append(f"英文頁有殘留中文：{'、'.join(cjk[:8])}")
+            body = re.sub(r'<a [^>]*\blang="zh[^"]*"[^>]*>.*?</a>', "", body)  # 語言選單裡的「繁體中文／简体中文」是刻意的
+            body = re.sub(r"<[^>]+>", " ", body)
+            if kind == "en":
+                body = body.replace("繁", "").replace("简", "")
+                cjk = sorted(set(re.findall(r"[一-鿿]+", body)))
+                if cjk:
+                    errors.append(f"英文頁有殘留中文：{'、'.join(cjk[:8])}")
+            else:
+                try:
+                    from opencc import OpenCC
+                    cc = OpenCC("t2s")
+                    left = sorted({c for c in set(re.findall(r"[一-鿿]", body)) if cc.convert(c) != c})
+                    if left:
+                        errors.append(f"簡體頁有殘留繁體字：{''.join(left[:20])}")
+                except ImportError:
+                    warnings.append("未安裝 OpenCC，略過簡體頁檢查")
 
     # 資料新鮮度（警告）
     today = pd.Timestamp(latest.get("date"))
