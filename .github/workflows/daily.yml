@@ -42,10 +42,17 @@ jobs:
             echo "今天已更新，備援排程略過"
           fi
 
-      - uses: actions/setup-python@v5   # 測試／故障通知也需要 Python，因此一律安裝
+      # 測試／故障通知也需要 Python，因此一律安裝。只有真的會 pip install 的執行才用快取：
+      # 略過的執行若遇到快取未命中（requirements 或 Python 版本變了），快取資料夾不存在，收尾步驟會報錯讓整個執行變成失敗
+      - uses: actions/setup-python@v5
+        if: steps.chk.outputs.skip != 'true'
         with:
           python-version: "3.11"
           cache: pip
+      - uses: actions/setup-python@v5
+        if: steps.chk.outputs.skip == 'true'
+        with:
+          python-version: "3.11"
 
       - run: pip install -r requirements.txt
         if: steps.chk.outputs.skip != 'true'
